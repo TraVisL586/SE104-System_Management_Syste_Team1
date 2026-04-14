@@ -1,0 +1,15 @@
+# --- Frontend (React.jsNode) ---
+frontendnode_modules
+frontendbuild
+frontend.env
+
+# --- Backend (Java Spring Boot) ---
+backendtarget
+backend.mvn
+backendapplication-dev.properties
+
+# --- OS  IDE Files ---
+.DS_Store
+.idea
+.iml
+.vscode
