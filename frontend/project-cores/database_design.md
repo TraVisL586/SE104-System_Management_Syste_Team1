@@ -168,8 +168,6 @@ GET /api/timetables/me/export: Xuất thời khóa biểu ra định dạng PDF 
 
 III. SƠ ĐỒ THỰC THỂ LIÊN KẾT (ERD)
 
-(Sơ đồ dưới đây sẽ tự động hiển thị thành hình ảnh khi đẩy lên GitHub)
-
 erDiagram
     users ||--o| students : "1-1 (has profile)"
     users ||--o| lecturers : "1-1 (has profile)"
