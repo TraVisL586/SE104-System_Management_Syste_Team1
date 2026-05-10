@@ -1,38 +1,111 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   BookOpen,
+  ChevronRight,
   CreditCard,
   GraduationCap,
   Home,
   LogOut,
+  MessageSquare,
+  School,
   Users,
 } from 'lucide-react';
 
-const menuItems = [
+const navigationGroups = [
   {
-    label: 'Tổng quan',
-    path: '/dashboard',
-    icon: Home,
+    title: 'Màn hình chính',
+    items: [
+      {
+        label: 'Tổng quan',
+        path: '/dashboard',
+        icon: Home,
+      },
+    ],
   },
   {
-    label: 'Sinh viên',
-    path: '/students',
-    icon: Users,
+    title: 'Sinh viên',
+    items: [
+      {
+        label: 'Workspace',
+        path: '/student',
+        icon: School,
+      },
+      {
+        label: 'Đăng ký học phần',
+        path: '/student/registrations',
+        icon: GraduationCap,
+      },
+      {
+        label: 'Thời khóa biểu',
+        path: '/student/timetable',
+        icon: BookOpen,
+      },
+      {
+        label: 'Điểm số',
+        path: '/student/grades',
+        icon: Users,
+      },
+      {
+        label: 'Học phí',
+        path: '/student/tuition',
+        icon: CreditCard,
+      },
+      {
+        label: 'Yêu cầu học vụ',
+        path: '/student/requests',
+        icon: MessageSquare,
+      },
+    ],
   },
   {
-    label: 'Lớp học phần',
-    path: '/course-sections',
-    icon: BookOpen,
+    title: 'Giảng viên',
+    items: [
+      {
+        label: 'Workspace',
+        path: '/lecturer',
+        icon: School,
+      },
+      {
+        label: 'Nhập điểm',
+        path: '/lecturer/grades',
+        icon: GraduationCap,
+      },
+      {
+        label: 'Điểm danh',
+        path: '/lecturer/attendance',
+        icon: Users,
+      },
+      {
+        label: 'Thông báo lớp',
+        path: '/lecturer/communications',
+        icon: MessageSquare,
+      },
+      {
+        label: 'Danh sách lớp',
+        path: '/lecturer/roster',
+        icon: BookOpen,
+      },
+    ],
   },
   {
-    label: 'Đăng ký học phần',
-    path: '/registrations',
-    icon: GraduationCap,
-  },
-  {
-    label: 'Học phí',
-    path: '/tuition',
-    icon: CreditCard,
+    title: 'Quản trị',
+    items: [
+      {
+        label: 'Academic Admin',
+        path: '/admin',
+        icon: School,
+      },
+      {
+        label: 'Academic Advisor',
+        path: '/advisor',
+        icon: Users,
+      },
+      {
+        label: 'Báo cáo thống kê',
+        path: '/admin/reports',
+        icon: ChevronRight,
+      },
+    ],
   },
 ];
 
@@ -46,49 +119,64 @@ function MainLayout() {
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
-      <aside className="fixed left-0 top-0 h-screen w-72 border-r border-slate-200 bg-white px-5 py-6 shadow-sm">
-        <div className="mb-8">
-          <h1 className="text-xl font-bold text-blue-700">SMS Team 1</h1>
-          <p className="mt-1 text-sm text-slate-500">
+      <aside className="fixed left-0 top-0 flex h-screen w-80 flex-col border-r border-slate-200 bg-slate-950 px-5 py-6 text-slate-100 shadow-2xl">
+        <div className="mb-8 rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">
+            SMS Team 1
+          </p>
+          <h1 className="mt-2 text-2xl font-bold text-white">
             Student Management System
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-slate-300">
+            Điều hướng theo 4 actor chính để vào đúng khu vực nghiệp vụ.
           </p>
         </div>
 
-        <nav className="space-y-2">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
+        <nav className="flex-1 space-y-6 overflow-y-auto pr-1">
+          {navigationGroups.map((group) => (
+            <div key={group.title}>
+              <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                {group.title}
+              </p>
 
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) =>
-                  [
-                    'flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition',
-                    isActive
-                      ? 'bg-blue-600 text-white shadow'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-blue-700',
-                  ].join(' ')
-                }
-              >
-                <Icon size={18} />
-                {item.label}
-              </NavLink>
-            );
-          })}
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+
+                  return (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      className={({ isActive }) =>
+                        [
+                          'flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition',
+                          isActive
+                            ? 'bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/20'
+                            : 'text-slate-300 hover:bg-white/8 hover:text-white',
+                        ].join(' ')
+                      }
+                    >
+                      <Icon size={18} />
+                      <span className="flex-1">{item.label}</span>
+                    </NavLink>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         <button
           type="button"
           onClick={handleLogout}
-          className="absolute bottom-6 left-5 right-5 flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+          className="mt-6 flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-red-300/40 hover:bg-red-500/10 hover:text-red-200"
         >
           <LogOut size={18} />
           Đăng xuất
         </button>
       </aside>
 
-      <main className="ml-72 min-h-screen px-8 py-6">
+      <main className="ml-80 min-h-screen bg-slate-50 px-8 py-6">
         <Outlet />
       </main>
     </div>

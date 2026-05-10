@@ -9,7 +9,10 @@
     'Segoe UI',
     sans-serif;
   color: #0f172a;
-  background: #f8fafc;
+  background:
+    radial-gradient(circle at top left, rgba(34, 211, 238, 0.16), transparent 30%),
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.12), transparent 28%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -28,6 +31,11 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(34, 211, 238, 0.16), transparent 30%),
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.12), transparent 28%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+  color: #0f172a;
 }
 
 button,
