@@ -10,6 +10,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -28,12 +30,12 @@ public class AuthService {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow();
 
-        String role = user.getRoles().stream()
-                .findFirst()
+        List<String> roles = user.getRoles().stream()
                 .map(r -> r.getName().name())
-                .orElseThrow(() -> new RuntimeException("User has no roles"));
-        String token = jwtUtil.generateToken(user.getUsername(), role);
+                .toList();
 
-        return new LoginResponse(token, user.getUsername(), user.getEmail(), user.getFullName());
+        String token = jwtUtil.generateToken(user.getUsername(), roles);
+
+        return new LoginResponse(token, user.getUsername(), user.getEmail(), user.getFullName(), roles);
     }
 }

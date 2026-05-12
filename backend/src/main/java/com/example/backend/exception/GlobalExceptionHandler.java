@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
+import javax.naming.AuthenticationException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,5 +26,11 @@ public class GlobalExceptionHandler {
         Map<String, String> error = new HashMap<>();
         error.put("message", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<Map<String, String>> handleAuthentication(AuthenticationException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("message", "Invalid username or password"));
     }
 }
