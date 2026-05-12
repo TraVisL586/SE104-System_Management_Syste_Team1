@@ -1,0 +1,28 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    container_name: nm-cnpm-postgres
+    environment:
+      POSTGRES_DB: QLSV_db
+      POSTGRES_USER: QLSV_user
+      POSTGRES_PASSWORD: QLSV_password
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      - "${POSTGRES_HOST_PORT:-5434}:5432"  # Chỉ expose khi cần
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U QLSV_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
