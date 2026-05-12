@@ -28,19 +28,19 @@ public class AdminController {
         return ResponseEntity.ok(studentService.getAllStudents());
     }
 
-    @GetMapping("/students/{id}")
+    @GetMapping("/students/{id:\\d+}")
         public ResponseEntity<StudentResponse> getStudent(@PathVariable Integer id) {
         return ResponseEntity.ok(studentService.getStudentById(id));
     }
 
-    @PutMapping("/students/{id}")
+    @PutMapping("/students/{id:\\d+}")
     public ResponseEntity<StudentResponse> updateStudent(
             @PathVariable Integer id,
             @Valid @RequestBody UpdateStudentRequest request) {
         return ResponseEntity.ok(studentService.updateStudent(id, request));
     }
 
-    @DeleteMapping("/students/{id}")
+    @DeleteMapping("/students/{id:\\d+}")
     public ResponseEntity<Void> deleteStudent(@PathVariable Integer id) {
         studentService.deleteStudent(id);
         return ResponseEntity.noContent().build();
