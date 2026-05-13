@@ -1,215 +1,196 @@
+import { useNavigate } from "react-router";
+import { useRole } from "../../context/RoleContext";
 import {
-  BookOpen,
-  CreditCard,
-  GraduationCap,
-  TrendingUp,
-  ArrowRight,
-  School,
-  ShieldCheck,
-  UserRound,
-  Users,
-} from 'lucide-react';
-import { Link } from 'react-router-dom';
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend,
+} from "recharts";
+import { Users, BookMarked, FolderOpen, AlertTriangle, CalendarRange, TrendingUp, ChevronRight } from "lucide-react";
 
-const statisticCards = [
-  {
-    title: 'Tổng sinh viên',
-    value: '1,248',
-    description: 'Sinh viên đang được quản lý',
-    icon: Users,
-    color: 'bg-blue-500',
-  },
-  {
-    title: 'Lớp học phần',
-    value: '86',
-    description: 'Lớp học phần đang mở',
-    icon: BookOpen,
-    color: 'bg-emerald-500',
-  },
-  {
-    title: 'Lượt đăng ký',
-    value: '3,425',
-    description: 'Đăng ký học phần trong học kỳ',
-    icon: GraduationCap,
-    color: 'bg-violet-500',
-  },
-  {
-    title: 'Học phí đã thu',
-    value: '72%',
-    description: 'Tỷ lệ hoàn thành thanh toán',
-    icon: CreditCard,
-    color: 'bg-amber-500',
-  },
+const ENROLL_DATA = [
+  { month: "T9/25", new: 1820, leave: 45 },
+  { month: "T10/25",new: 320,  leave: 28 },
+  { month: "T11/25",new: 180,  leave: 31 },
+  { month: "T12/25",new: 90,   leave: 40 },
+  { month: "T1/26", new: 70,   leave: 22 },
+  { month: "T2/26", new: 240,  leave: 18 },
+  { month: "T3/26", new: 110,  leave: 25 },
+  { month: "T4/26", new: 85,   leave: 14 },
+  { month: "T5/26", new: 60,   leave: 9  },
 ];
 
-const actorCards = [
-  {
-    title: 'Sinh viên',
-    description: 'Đăng ký học phần, xem thời khóa biểu, điểm số và học phí.',
-    path: '/student',
-    accent: 'from-sky-500 to-cyan-400',
-    icon: UserRound,
-    useCases: 'UC-1 · UC-2 · UC-3 · UC-4',
-  },
-  {
-    title: 'Giảng viên',
-    description: 'Nhập điểm, điểm danh, gửi thông báo và xem danh sách lớp.',
-    path: '/lecturer',
-    accent: 'from-emerald-500 to-teal-400',
-    icon: School,
-    useCases: 'UC-7 · UC-8 · UC-9',
-  },
-  {
-    title: 'Academic Admin',
-    description: 'Mở lớp, xếp lịch, quản lý tài khoản, công nợ và báo cáo.',
-    path: '/admin',
-    accent: 'from-orange-500 to-amber-400',
-    icon: ShieldCheck,
-    useCases: 'UC-10 · UC-11 · UC-17 · UC-19',
-  },
-  {
-    title: 'Academic Advisor',
-    description: 'Xem hồ sơ sinh viên và xử lý yêu cầu học vụ.',
-    path: '/advisor',
-    accent: 'from-violet-500 to-fuchsia-400',
-    icon: Users,
-    useCases: 'UC-14 · UC-15',
-  },
+const DEPT_DATA = [
+  { name: "CNTT",       value: 1842 },
+  { name: "Kinh tế",    value: 1523 },
+  { name: "Kỹ thuật",   value: 1210 },
+  { name: "Ngoại ngữ",  value: 987  },
+  { name: "Y Dược",     value: 756  },
+];
+const DEPT_COLORS = ["#2563eb", "#10b981", "#8b5cf6", "#f59e0b", "#ef4444"];
+
+const RECENT_LOGS = [
+  { time: "08:42", action: "Mở lớp học phần CSC501-L03",   actor: "Admin", type: "create" },
+  { time: "08:15", action: "Cập nhật TKB tuần 19",          actor: "Admin", type: "update" },
+  { time: "07:55", action: "Cập nhật trạng thái SV.2023.00891", actor: "Admin", type: "update" },
+  { time: "Hôm qua", action: "Phê duyệt chương trình mới",  actor: "Admin", type: "approve" },
 ];
 
-function AdminDashboard() {
+const TYPE_COLOR = { create: "#10b981", update: "#2563eb", approve: "#8b5cf6" };
+
+export function AdminDashboard() {
+  const { user } = useRole();
+  const navigate = useNavigate();
+
   return (
-    <div className="space-y-8">
-      <section className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-sm">
-        <div className="grid gap-8 bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950 px-8 py-8 text-white lg:grid-cols-[1.35fr_0.9fr] lg:px-10 lg:py-10">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300">
-              Main screen
-            </p>
-            <h2 className="mt-4 max-w-2xl text-4xl font-bold leading-tight lg:text-5xl">
-              Màn hình chính cho 4 actor của hệ thống học vụ
-            </h2>
-            <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300 lg:text-base">
-              Đây là điểm vào trung tâm để chuyển nhanh sang khu vực Sinh viên,
-              Giảng viên, Academic Admin và Academic Advisor. Mỗi khối đã gắn
-              theo use case tương ứng để bạn mở rộng dần theo đúng luồng nghiệp
-              vụ.
-            </p>
-
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link
-                to="/student"
-                className="inline-flex items-center gap-2 rounded-full bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
-              >
-                Vào khu Sinh viên <ArrowRight size={16} />
-              </Link>
-              <Link
-                to="/admin"
-                className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-              >
-                Vào khu Quản trị <ArrowRight size={16} />
-              </Link>
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-            {actorCards.map((card) => {
-              const Icon = card.icon;
-
-              return (
-                <Link
-                  key={card.title}
-                  to={card.path}
-                  className="group rounded-3xl border border-white/10 bg-white/8 p-5 transition hover:-translate-y-1 hover:bg-white/12"
-                >
-                  <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${card.accent} text-white shadow-lg`}>
-                    <Icon size={22} />
-                  </div>
-                  <p className="text-lg font-semibold text-white">
-                    {card.title}
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-300">
-                    {card.description}
-                  </p>
-                  <p className="mt-3 text-xs font-medium uppercase tracking-[0.18em] text-cyan-200/80">
-                    {card.useCases}
-                  </p>
-                </Link>
-              );
-            })}
-          </div>
+    <div className="space-y-5">
+      {/* Welcome */}
+      <div
+        className="rounded-2xl px-6 py-5 flex flex-wrap items-center justify-between gap-4"
+        style={{ background: "linear-gradient(135deg, #064e3b 0%, #10b981 100%)" }}
+      >
+        <div>
+          <p style={{ color: "#a7f3d0", fontSize: "0.82rem" }}>Bảng điều khiển Quản trị 🎓</p>
+          <h1 style={{ color: "white", marginTop: 2 }}>{user?.name}</h1>
+          <p style={{ color: "#bbf7d0", fontSize: "0.8rem", marginTop: 4 }}>
+            {user?.id} · {user?.department} · HK2 — 2025/2026
+          </p>
         </div>
-      </section>
-
-      <section>
-        <div className="mb-5 flex items-end justify-between gap-4">
-          <div>
-            <h3 className="text-2xl font-bold text-slate-900">
-              Tổng quan hệ thống
-            </h3>
-            <p className="mt-1 text-sm text-slate-500">
-              Các chỉ số mẫu để làm khung dashboard ban đầu.
-            </p>
-          </div>
+        {/*
+        <div className="flex gap-2 flex-wrap">
+          {[
+            { label: "Lớp học phần",  path: "/admin/courses",    icon: BookMarked },
+            { label: "Trạng thái SV", path: "/admin/student-status",     icon: AlertTriangle },
+            { label: "Quản lý TKB",   path: "/admin/timetable-manager",  icon: CalendarRange },
+          ].map(({ label, path, icon: Icon }) => (
+            <button
+              key={path}
+              onClick={() => navigate(path)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl"
+              style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "white", border: "none", cursor: "pointer", fontSize: "0.8rem" }}
+            >
+              <Icon size={14} /> {label}
+            </button>
+          ))}
         </div>
+        */}
+      </div>
 
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-          {statisticCards.map((card) => {
-            const Icon = card.icon;
-
-            return (
-              <div
-                key={card.title}
-                className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-              >
-                <div
-                  className={`mb-5 flex h-12 w-12 items-center justify-center rounded-xl text-white ${card.color}`}
-                >
-                  <Icon size={22} />
-                </div>
-
-                <p className="text-sm font-medium text-slate-500">
-                  {card.title}
-                </p>
-                <p className="mt-2 text-3xl font-bold text-slate-900">
-                  {card.value}
-                </p>
-                <p className="mt-2 text-sm text-slate-500">
-                  {card.description}
-                </p>
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "Tổng Sinh viên",  value: "6.318",  sub: "+124 học kỳ này",  color: "#2563eb", bg: "#dbeafe", icon: Users },
+          { label: "Lớp học phần",    value: "247",    sub: "Đang mở học kỳ 2", color: "#8b5cf6", bg: "#ede9fe", icon: BookMarked },
+          { label: "Chương trình",    value: "18",     sub: "8 khoa · 18 CTĐT", color: "#10b981", bg: "#d1fae5", icon: FolderOpen },
+          { label: "Cần xử lý",       value: "31",     sub: "SV cảnh báo học vụ",color: "#f59e0b", bg: "#fef3c7", icon: AlertTriangle },
+        ].map(({ label, value, sub, color, bg, icon: Icon }) => (
+          <div key={label} className="rounded-2xl p-4" style={{ backgroundColor: "#fff", border: "1px solid #e2e8f0" }}>
+            <div className="flex items-center justify-between mb-3">
+              <p style={{ fontSize: "0.75rem", color: "#64748b" }}>{label}</p>
+              <div style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Icon size={16} color={color} />
               </div>
-            );
-          })}
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-              <TrendingUp size={20} />
             </div>
+            <p style={{ fontSize: "1.5rem", fontWeight: 700, color: "#1e293b" }}>{value}</p>
+            <p style={{ fontSize: "0.72rem", color, fontWeight: 600, marginTop: 2 }}>{sub}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Enrollment chart */}
+        <div className="lg:col-span-2 rounded-2xl p-5" style={{ backgroundColor: "#fff", border: "1px solid #e2e8f0" }}>
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp size={16} color="#10b981" />
             <div>
-              <h3 className="text-lg font-semibold text-slate-900">
-                Hoạt động gần đây
-              </h3>
-              <p className="text-sm text-slate-500">
-                Các nghiệp vụ thường dùng trong hệ thống.
-              </p>
+              <p style={{ fontWeight: 700, fontSize: "0.95rem", color: "#1e293b" }}>Biến động sinh viên</p>
+              <p style={{ fontSize: "0.72rem", color: "#64748b" }}>Nhập học mới & Nghỉ học (9 tháng gần nhất)</p>
             </div>
           </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={ENROLL_DATA} barSize={14}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#94a3b8" }} />
+              <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} />
+              <Tooltip contentStyle={{ borderRadius: 10, fontSize: "0.78rem" }} />
+              <Bar dataKey="new"   fill="#10b981" radius={[4,4,0,0]} name="Nhập học" />
+              <Bar dataKey="leave" fill="#ef4444" radius={[4,4,0,0]} name="Nghỉ học" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
 
-          <div className="divide-y divide-slate-100">
-            <div className="py-4 text-sm text-slate-600">
-              Cập nhật hồ sơ sinh viên mới.
-            </div>
-            <div className="py-4 text-sm text-slate-600">
-              Mở lớp học phần cho học kỳ hiện tại.
-            </div>
-            <div className="py-4 text-sm text-slate-600">
-              Ghi nhận đăng ký học phần thành công.
-            </div>
+        {/* Dept pie */}
+        <div className="rounded-2xl p-5" style={{ backgroundColor: "#fff", border: "1px solid #e2e8f0" }}>
+          <p style={{ fontWeight: 700, fontSize: "0.95rem", color: "#1e293b", marginBottom: 2 }}>Phân bổ theo Khoa</p>
+          <p style={{ fontSize: "0.72rem", color: "#64748b", marginBottom: 12 }}>Tổng 6.318 sinh viên</p>
+          <ResponsiveContainer width="100%" height={180}>
+            <PieChart>
+              <Pie data={DEPT_DATA} cx="50%" cy="50%" innerRadius={50} outerRadius={75} dataKey="value" paddingAngle={2}>
+                {DEPT_DATA.map((_, i) => (
+                  <Cell key={i} fill={DEPT_COLORS[i]} />
+                ))}
+              </Pie>
+              <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "0.72rem" }} />
+              <Tooltip contentStyle={{ borderRadius: 10, fontSize: "0.78rem" }} formatter={(v) => [`${v} SV`, ""]} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Quick nav + Recent logs */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div className="rounded-2xl p-5" style={{ backgroundColor: "#fff", border: "1px solid #e2e8f0" }}>
+          <p style={{ fontWeight: 700, fontSize: "0.95rem", color: "#1e293b", marginBottom: 14 }}>Chức năng quản trị</p>
+          <div className="space-y-2">
+            {[
+              { label: "Quản lý Lớp học phần",    path: "/admin/courses",   icon: BookMarked, color: "#8b5cf6", bg: "#ede9fe", desc: "Mở/đóng lớp, phân công GV" },
+              { label: "Quản lý Chương trình ĐT", path: "/admin/curriculum",icon: FolderOpen, color: "#10b981", bg: "#d1fae5", desc: "Cập nhật CTĐT, môn học" },
+              { label: "Trạng thái Sinh viên",    path: "/admin/student-status",    icon: AlertTriangle, color: "#f59e0b", bg: "#fef3c7", desc: "Cảnh báo, đình chỉ, buộc thôi" },
+              { label: "Quản lý Thời khóa biểu",  path: "/admin/timetable-manager", icon: CalendarRange, color: "#2563eb", bg: "#dbeafe", desc: "Lập và điều chỉnh TKB" },
+            ].map(({ label, path, icon: Icon, color, bg, desc }) => (
+              <button
+                key={path}
+                onClick={() => navigate(path)}
+                className="w-full flex items-center gap-3 p-3 rounded-xl text-left"
+                style={{ border: "1px solid #f1f5f9", cursor: "pointer", background: "none" }}
+              >
+                <div style={{ width: 36, height: 36, borderRadius: 9, backgroundColor: bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Icon size={16} color={color} />
+                </div>
+                <div className="flex-1">
+                  <p style={{ fontSize: "0.85rem", fontWeight: 600, color: "#1e293b" }}>{label}</p>
+                  <p style={{ fontSize: "0.7rem", color: "#64748b" }}>{desc}</p>
+                </div>
+                <ChevronRight size={14} color="#94a3b8" />
+              </button>
+            ))}
           </div>
         </div>
-      </section>
+
+        {/* Recent actions */}
+        <div className="rounded-2xl" style={{ backgroundColor: "#fff", border: "1px solid #e2e8f0" }}>
+          <div className="px-5 py-4" style={{ borderBottom: "1px solid #f1f5f9" }}>
+            <p style={{ fontWeight: 700, fontSize: "0.95rem", color: "#1e293b" }}>Hoạt động gần đây</p>
+          </div>
+          <div className="divide-y" style={{ borderColor: "#f1f5f9" }}>
+            {RECENT_LOGS.map((log, i) => (
+              <div key={i} className="flex items-center gap-3 px-5 py-3">
+                <div style={{ width: 8, height: 8, borderRadius: 9999, backgroundColor: TYPE_COLOR[log.type], flexShrink: 0 }} />
+                <div className="flex-1 min-w-0">
+                  <p style={{ fontSize: "0.82rem", color: "#1e293b" }} className="truncate">{log.action}</p>
+                  <p style={{ fontSize: "0.68rem", color: "#94a3b8" }}>{log.actor} · {log.time}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="px-5 py-3" style={{ borderTop: "1px solid #f1f5f9" }}>
+            <button
+              onClick={() => navigate("/admin/logs")}
+              style={{ fontSize: "0.78rem", color: "#10b981", fontWeight: 500, background: "none", border: "none", cursor: "pointer" }}
+            >
+              Xem nhật ký đầy đủ →
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

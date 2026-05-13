@@ -1,111 +1,184 @@
-import { Link } from 'react-router-dom';
-import { Plus, Search } from 'lucide-react';
+import { useState } from "react";
+import { Search, AlertTriangle, CheckCircle2, XCircle, Edit2, Save } from "lucide-react";
+import { useToast } from "../../context/ToastContext";
 
-const students = [
-  {
-    id: 'SV001',
-    fullName: 'Nguyễn Văn A',
-    faculty: 'Công nghệ thông tin',
-    className: 'SE104.N21',
-    status: 'Đang học',
-  },
-  {
-    id: 'SV002',
-    fullName: 'Trần Thị B',
-    faculty: 'Hệ thống thông tin',
-    className: 'SE104.N21',
-    status: 'Đang học',
-  },
-  {
-    id: 'SV003',
-    fullName: 'Lê Minh C',
-    faculty: 'Khoa học máy tính',
-    className: 'SE104.N22',
-    status: 'Tạm nghỉ',
-  },
+const INITIAL_STUDENTS = [
+  { id: "SV.2023.00847", name: "Nguyễn Thị Lan",   gpa: 8.3,  tc: 86, khoa: "CNTT",    status: "active",    warningCount: 0 },
+  { id: "SV.2022.01234", name: "Trần Văn Hùng",     gpa: 4.1,  tc: 62, khoa: "CNTT",    status: "warning2",  warningCount: 2 },
+  { id: "SV.2021.00568", name: "Lê Thị Mai",         gpa: 3.2,  tc: 45, khoa: "Kinh tế", status: "suspended", warningCount: 3 },
+  { id: "SV.2023.00991", name: "Phạm Quốc Bảo",      gpa: 5.8,  tc: 75, khoa: "Kỹ thuật",status: "warning1",  warningCount: 1 },
+  { id: "SV.2022.00412", name: "Hoàng Thu Hà",        gpa: 7.2,  tc: 95, khoa: "Ngoại ngữ",status:"active",   warningCount: 0 },
+  { id: "SV.2020.00234", name: "Vũ Minh Khôi",        gpa: 2.8,  tc: 38, khoa: "CNTT",    status: "expelled",  warningCount: 4 },
+  { id: "SV.2023.01102", name: "Đinh Thị Ngọc",       gpa: 6.5,  tc: 72, khoa: "Kinh tế", status: "active",    warningCount: 0 },
+  { id: "SV.2022.00876", name: "Bùi Thanh Tùng",      gpa: 4.8,  tc: 58, khoa: "CNTT",    status: "warning1",  warningCount: 1 },
 ];
 
-function Students() {
+const STATUS_CFG = {
+  active:    { label: "Bình thường",    color: "#10b981", bg: "#d1fae5", icon: CheckCircle2 },
+  warning1:  { label: "Cảnh báo lần 1", color: "#f59e0b", bg: "#fef3c7", icon: AlertTriangle },
+  warning2:  { label: "Cảnh báo lần 2", color: "#ef4444", bg: "#fee2e2", icon: AlertTriangle },
+  suspended: { label: "Đình chỉ HK",   color: "#dc2626", bg: "#fee2e2", icon: XCircle },
+  expelled:  { label: "Buộc thôi học", color: "#7f1d1d", bg: "#fee2e2", icon: XCircle },
+};
+
+const ALL_STATUSES = Object.entries(STATUS_CFG).map(([k, v]) => ({ key: k, ...v }));
+
+export function StudentStatus() {
+  const [students, setStudents] = useState(INITIAL_STUDENTS);
+  const [search,   setSearch]   = useState("");
+  const [filter,   setFilter]   = useState("all");
+  const [editing,  setEditing]  = useState(null);
+  const [newStatus,setNewStatus]= useState("");
+  const [note,     setNote]     = useState("");
+  const { showToast } = useToast();
+
+  const filtered = students.filter((s) => {
+    const matchS = s.name.toLowerCase().includes(search.toLowerCase()) || s.id.toLowerCase().includes(search.toLowerCase());
+    const matchF = filter === "all" || s.status === filter;
+    return matchS && matchF;
+  });
+
+  function startEdit(s) {
+    setEditing(s.id);
+    setNewStatus(s.status);
+    setNote("");
+  }
+
+  function saveEdit(id) {
+    if (!note.trim()) {
+      showToast("warning", "Thiếu ghi chú", "Vui lòng nhập lý do cập nhật trạng thái.");
+      return;
+    }
+    setStudents((prev) =>
+      prev.map((s) =>
+        s.id === id ? { ...s, status: newStatus } : s
+      )
+    );
+    const sv = students.find((s) => s.id === id);
+    showToast("success", "Cập nhật trạng thái thành công", `${sv?.name} → ${STATUS_CFG[newStatus]?.label}`);
+    setEditing(null);
+  }
+
+  const counts = Object.keys(STATUS_CFG).reduce((acc, k) => {
+    acc[k] = students.filter((s) => s.status === k).length;
+    return acc;
+  }, {});
+
   return (
-    <div>
-      <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-        <div>
-          <h2 className="text-3xl font-bold text-slate-900">
-            Quản lý sinh viên
-          </h2>
-          <p className="mt-2 text-slate-500">
-            Tra cứu, thêm mới và cập nhật thông tin sinh viên.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow transition hover:bg-blue-700"
-        >
-          <Plus size={18} />
-          Thêm sinh viên
-        </button>
+    <div className="space-y-5">
+      <div>
+        <h1 style={{ color: "#1e293b" }}>Trạng thái Học vụ Sinh viên</h1>
+        <p style={{ color: "#64748b", fontSize: "0.875rem", marginTop: 2 }}>
+          Cập nhật trạng thái học vụ: bình thường, cảnh báo, đình chỉ, buộc thôi học — UC13
+        </p>
       </div>
 
-      <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex items-center gap-3 rounded-xl bg-slate-50 px-4 py-3">
-          <Search size={18} className="text-slate-400" />
-          <input
-            type="text"
-            placeholder="Tìm theo mã sinh viên, họ tên, lớp..."
-            className="w-full bg-transparent text-sm outline-none"
-          />
-        </div>
+      {/* Status summary */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        {ALL_STATUSES.map(({ key, label, color, bg, icon: Icon }) => (
+          <button
+            key={key}
+            onClick={() => setFilter(filter === key ? "all" : key)}
+            className="rounded-xl p-3 text-center"
+            style={{
+              backgroundColor: filter === key ? bg : "#fff",
+              border: `1px solid ${filter === key ? color : "#e2e8f0"}`,
+              cursor: "pointer",
+            }}
+          >
+            <p style={{ fontSize: "1.3rem", fontWeight: 800, color }}>{counts[key] ?? 0}</p>
+            <p style={{ fontSize: "0.7rem", color, fontWeight: 600 }}>{label}</p>
+          </button>
+        ))}
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <table className="w-full border-collapse text-left text-sm">
-          <thead className="bg-slate-50 text-slate-500">
-            <tr>
-              <th className="px-5 py-4 font-semibold">Mã SV</th>
-              <th className="px-5 py-4 font-semibold">Họ tên</th>
-              <th className="px-5 py-4 font-semibold">Khoa</th>
-              <th className="px-5 py-4 font-semibold">Lớp</th>
-              <th className="px-5 py-4 font-semibold">Trạng thái</th>
-              <th className="px-5 py-4 font-semibold">Thao tác</th>
-            </tr>
-          </thead>
+      <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: "#fff", border: "1px solid #e2e8f0" }}>
+        <div className="flex items-center justify-between px-5 py-4 flex-wrap gap-3" style={{ borderBottom: "1px solid #f1f5f9" }}>
+          <p style={{ fontWeight: 700, fontSize: "0.95rem", color: "#1e293b" }}>Danh sách sinh viên ({filtered.length})</p>
+          <div style={{ position: "relative" }}>
+            <Search size={14} color="#94a3b8" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }} />
+            <input
+              placeholder="Tìm MSSV, họ tên…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ paddingLeft: 32, paddingRight: 12, paddingTop: 8, paddingBottom: 8, borderRadius: 10, border: "1px solid #e2e8f0", fontSize: "0.82rem", outline: "none", width: 220 }}
+            />
+          </div>
+        </div>
 
-          <tbody className="divide-y divide-slate-100">
-            {students.map((student) => (
-              <tr key={student.id} className="hover:bg-slate-50">
-                <td className="px-5 py-4 font-medium text-slate-900">
-                  {student.id}
-                </td>
-                <td className="px-5 py-4 text-slate-700">
-                  {student.fullName}
-                </td>
-                <td className="px-5 py-4 text-slate-600">
-                  {student.faculty}
-                </td>
-                <td className="px-5 py-4 text-slate-600">
-                  {student.className}
-                </td>
-                <td className="px-5 py-4">
-                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                    {student.status}
-                  </span>
-                </td>
-                <td className="px-5 py-4">
-                  <Link
-                    to={`/students/${student.id}`}
-                    className="font-medium text-blue-600 hover:text-blue-700"
-                  >
-                    Xem chi tiết
-                  </Link>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full" style={{ minWidth: 800 }}>
+            <thead>
+              <tr style={{ backgroundColor: "#f8fafc" }}>
+                {["MSSV", "Họ và tên", "Khoa", "GPA", "TC Tích lũy", "Trạng thái", "Thao tác"].map((h) => (
+                  <th key={h} className="text-left px-4 py-3" style={{ fontSize: "0.65rem", color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>{h}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filtered.map((s) => {
+                const cfg  = STATUS_CFG[s.status];
+                const Icon = cfg.icon;
+                const isEditing = editing === s.id;
+                return (
+                  <tr key={s.id} style={{ borderTop: "1px solid #f1f5f9", backgroundColor: isEditing ? "#f8fafc" : undefined }}>
+                    <td className="px-4 py-3" style={{ fontFamily: "monospace", fontSize: "0.75rem", color: "#10b981", fontWeight: 600 }}>{s.id}</td>
+                    <td className="px-4 py-3" style={{ fontSize: "0.85rem", color: "#1e293b", fontWeight: 500 }}>{s.name}</td>
+                    <td className="px-4 py-3" style={{ fontSize: "0.78rem", color: "#64748b" }}>{s.khoa}</td>
+                    <td className="px-4 py-3" style={{ fontSize: "0.88rem", fontWeight: 700, color: s.gpa >= 7 ? "#10b981" : s.gpa >= 5 ? "#f59e0b" : "#ef4444" }}>
+                      {s.gpa.toFixed(1)}
+                    </td>
+                    <td className="px-4 py-3" style={{ fontSize: "0.82rem", color: "#475569" }}>{s.tc} TC</td>
+                    <td className="px-4 py-3">
+                      {isEditing ? (
+                        <select
+                          value={newStatus}
+                          onChange={(e) => setNewStatus(e.target.value)}
+                          style={{ padding: "4px 8px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: "0.78rem", outline: "none" }}
+                        >
+                          {ALL_STATUSES.map(({ key, label }) => (
+                            <option key={key} value={key}>{label}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className="flex items-center gap-1.5 w-fit px-2.5 py-1 rounded-full" style={{ backgroundColor: cfg.bg, color: cfg.color, fontSize: "0.7rem", fontWeight: 600 }}>
+                          <Icon size={10} /> {cfg.label}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {isEditing ? (
+                        <div className="flex flex-col gap-1.5">
+                          <input
+                            placeholder="Lý do cập nhật *"
+                            value={note}
+                            onChange={(e) => setNote(e.target.value)}
+                            style={{ padding: "4px 8px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: "0.75rem", outline: "none", width: 160 }}
+                          />
+                          <div className="flex gap-1.5">
+                            <button onClick={() => saveEdit(s.id)} style={{ display: "flex", alignItems: "center", gap: 3, padding: "4px 10px", borderRadius: 8, backgroundColor: "#d1fae5", color: "#065f46", border: "none", cursor: "pointer", fontSize: "0.75rem", fontWeight: 600 }}>
+                              <Save size={11} /> Lưu
+                            </button>
+                            <button onClick={() => setEditing(null)} style={{ padding: "4px 10px", borderRadius: 8, border: "1px solid #e2e8f0", background: "none", cursor: "pointer", fontSize: "0.75rem" }}>
+                              Hủy
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button onClick={() => startEdit(s)} style={{ display: "flex", alignItems: "center", gap: 3, padding: "4px 10px", borderRadius: 8, border: "1px solid #e2e8f0", background: "none", cursor: "pointer", fontSize: "0.78rem" }}>
+                          <Edit2 size={12} color="#2563eb" /> Cập nhật
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
 }
 
-export default Students;
+export default StudentStatus;
