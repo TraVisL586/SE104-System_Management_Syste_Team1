@@ -1,3 +1,4 @@
+import { useRole } from '../context/RoleContext';
 
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 
@@ -5,7 +6,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import Layout from '../layouts/Layout';
 
 // Auth / Public
-import Login from '../pages/public/Login';
+import Login from "../pages/public/Login";
 import ForgotPassword from '../pages/public/ForgotPassword';
 
 // Error
@@ -17,14 +18,17 @@ import ProtectedRoute from '../components/ProtectedRoute';
 
 // ── Admin ──────────────────────────────────────────────────────────────────
 import AcademicAdminWorkspacePage from '../pages/admin/AcademicAdminWorkspacePage';
-import AcademicAdvisorWorkspacePage from '../pages/admin/AcademicAdvisorWorkspacePage';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import CourseSections from '../pages/admin/CourseSections';
 import CurriculumMgmt from '../pages/admin/CurriculumMgmt';
 import TimetableManager from '../pages/admin/TimetableManager';
 import StudentStatus from '../pages/admin/StudentStatus';
-import StudentProfiles from '../pages/admin/StudentProfiles';
-import RequestProcessing from '../pages/admin/RequestProcessing';
+
+// ── Advisor ──────────────────────────────────────────────────────────────────
+import AcademicAdvisorWorkspacePage from '../pages/advisor/AcademicAdvisorWorkspacePage';
+import AdvisorDashboard from '../pages/advisor/AdvisorDashboard'
+import StudentProfiles from '../pages/advisor/StudentProfiles';
+import RequestProcessing from '../pages/advisor/RequestProcessing';
 
 // ── Lecturer ───────────────────────────────────────────────────────────────
 import LecturerWorkspacePage from '../pages/lecturer/LecturerWorkspacePage';
@@ -46,16 +50,28 @@ import AcademicRequests from '../pages/student/AcademicRequests';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-const ADMIN_ROLES = ['ACADEMIC_ADMIN', 'IT_ADMIN'];
-const ADVISOR_ROLES = ['ACADEMIC_ADVISOR', 'ACADEMIC_ADMIN', 'IT_ADMIN'];
+const ADMIN_ROLES = ['admin', 'academic_admin'];
+const ADVISOR_ROLES = ['advisor', 'admin'];
+
+const RootRedirect = () => {
+  const { isAuthenticated, role } = useRole();
+
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+
+  // ĐẢM BẢO LÀ CHỮ THƯỜNG
+  if (role === 'student') return <Navigate to="/student/dashboard" replace />;
+  if (role === 'lecturer') return <Navigate to="/lecturer/dashboard" replace />;
+  if (role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+  if (role === 'advisor') return <Navigate to="/advisor/dashboard" replace />;
+
+  return <Navigate to="/dashboard" replace />;
+};
 
 const appRouter = createBrowserRouter([
-  // ── Root redirect ──────────────────────────────────────────────────────────
   {
     path: '/',
-    element: <Navigate to="/login" replace />,
+    element: <RootRedirect />, // Thay Navigate tĩnh bằng Logic động
   },
-
   // ── Public (no layout) ────────────────────────────────────────────────────
   {
     path: '/login',
@@ -85,7 +101,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/student',
         element: (
-          <ProtectedRoute allowedRoles={['STUDENT']}>
+          <ProtectedRoute allowedRoles={['student']}>
             <StudentWorkspacePage />
           </ProtectedRoute>
         ),
@@ -93,7 +109,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/student/dashboard',
         element: (
-          <ProtectedRoute allowedRoles={['STUDENT']}>
+          <ProtectedRoute allowedRoles={['student']}>
             <StudentDashboard />
           </ProtectedRoute>
         ),
@@ -101,7 +117,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/student/registrations',
         element: (
-          <ProtectedRoute allowedRoles={['STUDENT']}>
+          <ProtectedRoute allowedRoles={['student']}>
             <Registrations />
           </ProtectedRoute>
         ),
@@ -109,7 +125,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/student/timetable',
         element: (
-          <ProtectedRoute allowedRoles={['STUDENT']}>
+          <ProtectedRoute allowedRoles={['student']}>
             <StudentTimetable />
           </ProtectedRoute>
         ),
@@ -117,7 +133,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/student/grades',
         element: (
-          <ProtectedRoute allowedRoles={['STUDENT']}>
+          <ProtectedRoute allowedRoles={['student']}>
             <Grades />
           </ProtectedRoute>
         ),
@@ -125,7 +141,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/student/tuition',
         element: (
-          <ProtectedRoute allowedRoles={['STUDENT']}>
+          <ProtectedRoute allowedRoles={['student']}>
             <TuitionFees />
           </ProtectedRoute>
         ),
@@ -133,7 +149,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/student/requests',
         element: (
-          <ProtectedRoute allowedRoles={['STUDENT']}>
+          <ProtectedRoute allowedRoles={['student']}>
             <AcademicRequests />
           </ProtectedRoute>
         ),
@@ -143,7 +159,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/lecturer',
         element: (
-          <ProtectedRoute allowedRoles={['LECTURER']}>
+          <ProtectedRoute allowedRoles={['lecturer']}>
             <LecturerWorkspacePage />
           </ProtectedRoute>
         ),
@@ -151,7 +167,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/lecturer/dashboard',
         element: (
-          <ProtectedRoute allowedRoles={['LECTURER']}>
+          <ProtectedRoute allowedRoles={['lecturer']}>
             <LecturerDashboard />
           </ProtectedRoute>
         ),
@@ -159,7 +175,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/lecturer/grades',
         element: (
-          <ProtectedRoute allowedRoles={['LECTURER']}>
+          <ProtectedRoute allowedRoles={['lecturer']}>
             <GradeEntry />
           </ProtectedRoute>
         ),
@@ -167,7 +183,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/lecturer/attendance',
         element: (
-          <ProtectedRoute allowedRoles={['LECTURER']}>
+          <ProtectedRoute allowedRoles={['lecturer']}>
             <Attendance />
           </ProtectedRoute>
         ),
@@ -175,7 +191,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/lecturer/communications',
         element: (
-          <ProtectedRoute allowedRoles={['LECTURER']}>
+          <ProtectedRoute allowedRoles={['lecturer']}>
             <Communications />
           </ProtectedRoute>
         ),
@@ -183,7 +199,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/lecturer/roster',
         element: (
-          <ProtectedRoute allowedRoles={['LECTURER']}>
+          <ProtectedRoute allowedRoles={['lecturer']}>
             <ClassRoster />
           </ProtectedRoute>
         ),
@@ -191,7 +207,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/lecturer/timetable',
         element: (
-          <ProtectedRoute allowedRoles={['LECTURER']}>
+          <ProtectedRoute allowedRoles={['lecturer']}>
             <LecturerTimetable />
           </ProtectedRoute>
         ),
@@ -252,7 +268,15 @@ const appRouter = createBrowserRouter([
         path: '/advisor',
         element: (
           <ProtectedRoute allowedRoles={ADVISOR_ROLES}>
-            <AcademicAdvisorWorkspacePage />
+            <AdminDashboard />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/advisor/dashboard', // <--- THÊM DÒNG NÀY
+        element: (
+          <ProtectedRoute allowedRoles={ADVISOR_ROLES}>
+            <AdvisorDashboard />
           </ProtectedRoute>
         ),
       },

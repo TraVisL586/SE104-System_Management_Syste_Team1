@@ -21,10 +21,10 @@ import apiClient from './apiClient';
 const USE_MOCK = true; // ← đổi thành false khi có backend thật
 
 const MOCK_ACCOUNTS = [
-  { identifier: 'sv001',        password: '123456', token: 'mock-token-student',  user: { id: 1, name: 'Nguyễn Văn A',  role: 'STUDENT'        } },
-  { identifier: 'gv001',   password: '123456', token: 'mock-token-lecturer', user: { id: 2, name: 'Trần Thị B',    role: 'LECTURER'       } },
-  { identifier: 'admin1',password: '123456', token: 'mock-token-admin',    user: { id: 3, name: 'Lê Văn C',      role: 'ACADEMIC_ADMIN' } },
-  { identifier: 'admin2',password: '123456', token: 'mock-token-admin',    user: { id: 4, name: 'Lê Văn D',      role: 'IT_ADMIN' } },
+  { identifier: 'sv001@gmail.com',        password: '123456', token: 'mock-token-student',  user: { id: 1, name: 'Nguyễn Văn A',  role: 'STUDENT'        } },
+  { identifier: 'gv001@gmail.com',   password: '123456', token: 'mock-token-lecturer', user: { id: 2, name: 'Trần Thị B',    role: 'LECTURER'       } },
+  { identifier: 'admin1@gmail.com',password: '123456', token: 'mock-token-admin',    user: { id: 3, name: 'Lê Văn C',      role: 'ACADEMIC_ADMIN' } },
+  { identifier: 'admin2@gmail.com',password: '123456', token: 'mock-token-admin',    user: { id: 4, name: 'Lê Văn D',      role: 'IT_ADMIN' } },
 ];
 
 function mockLogin(credentials) {

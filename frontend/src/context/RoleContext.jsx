@@ -68,23 +68,35 @@ const RoleContext = createContext(null);
 /**
  * Provider component để bọc ngoài ứng dụng (thường là ở main.jsx hoặc App.jsx)
  */
+// RoleContext.jsx
+
 export function RoleProvider({ children }) {
-  const [user, setUser] = useState(null);
+  // Khởi tạo user từ localStorage để khi F5 trang không bị mất login
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem('sms_user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
 
   const login = (role) => {
-    // Kiểm tra xem role có tồn tại trong DEMO_USERS không
     if (DEMO_USERS[role]) {
-      setUser(DEMO_USERS[role]);
+      const userData = DEMO_USERS[role];
+      setUser(userData);
+
+      // QUAN TRỌNG: Lưu vào localStorage để ProtectedRoute đọc được
+      localStorage.setItem('sms_user', JSON.stringify(userData));
+      localStorage.setItem('sms_access_token', 'demo-token-123'); // Tạo token giả
     } else {
-      console.error(`Role "${role}" không tồn tại trong hệ thống.`);
+      console.error(`Role "${role}" không tồn tại.`);
     }
   };
 
   const logout = () => {
     setUser(null);
+    // Xóa sạch dấu vết khi logout
+    localStorage.removeItem('sms_user');
+    localStorage.removeItem('sms_access_token');
   };
 
-  // Giá trị trả về cho các component tiêu thụ context
   const value = {
     user,
     isAuthenticated: !!user,
@@ -100,9 +112,6 @@ export function RoleProvider({ children }) {
   );
 }
 
-/**
- * Hook tùy chỉnh để sử dụng RoleContext nhanh hơn
- */
 export function useRole() {
   const context = useContext(RoleContext);
   if (!context) {
