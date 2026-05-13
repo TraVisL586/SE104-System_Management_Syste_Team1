@@ -23,6 +23,7 @@ import CourseSections from '../pages/admin/CourseSections';
 import CurriculumMgmt from '../pages/admin/CurriculumMgmt';
 import TimetableManager from '../pages/admin/TimetableManager';
 import StudentStatus from '../pages/admin/StudentStatus';
+import { SystemLogs } from '../pages/admin/SystemLogs';
 
 // ── Advisor ──────────────────────────────────────────────────────────────────
 import AcademicAdvisorWorkspacePage from '../pages/advisor/AcademicAdvisorWorkspacePage';
@@ -102,7 +103,7 @@ const appRouter = createBrowserRouter([
         path: '/student',
         element: (
           <ProtectedRoute allowedRoles={['student']}>
-            <StudentWorkspacePage />
+            <StudentDashboard />
           </ProtectedRoute>
         ),
       },
@@ -139,7 +140,7 @@ const appRouter = createBrowserRouter([
         ),
       },
       {
-        path: '/student/tuition',
+        path: '/student/fees',
         element: (
           <ProtectedRoute allowedRoles={['student']}>
             <TuitionFees />
@@ -160,7 +161,7 @@ const appRouter = createBrowserRouter([
         path: '/lecturer',
         element: (
           <ProtectedRoute allowedRoles={['lecturer']}>
-            <LecturerWorkspacePage />
+            <LecturerDashboard />
           </ProtectedRoute>
         ),
       },
@@ -231,7 +232,7 @@ const appRouter = createBrowserRouter([
         ),
       },
       {
-        path: '/admin/course-sections',
+        path: '/admin/courses',
         element: (
           <ProtectedRoute allowedRoles={ADMIN_ROLES}>
             <CourseSections />
@@ -239,7 +240,7 @@ const appRouter = createBrowserRouter([
         ),
       },
       {
-        path: '/admin/schedule',
+        path: '/admin/timetable-manager',
         element: (
           <ProtectedRoute allowedRoles={ADMIN_ROLES}>
             <TimetableManager />
@@ -262,6 +263,14 @@ const appRouter = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      {
+        path: '/admin/logs',
+        element: (
+          <ProtectedRoute allowedRoles={ADMIN_ROLES}>
+            <SystemLogs />
+          </ProtectedRoute>
+        ),
+      },
 
       // ── ACADEMIC ADVISOR (+ Admin có thể truy cập) ───────────────────────
       {
@@ -281,7 +290,7 @@ const appRouter = createBrowserRouter([
         ),
       },
       {
-        path: '/advisor/students',
+        path: '/advisor/profiles',
         element: (
           <ProtectedRoute allowedRoles={ADVISOR_ROLES}>
             <StudentProfiles />
