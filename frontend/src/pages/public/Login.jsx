@@ -1,135 +1,200 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import AuthService from '../../services/AuthService';
+import { useState } from "react";
+import { useNavigate } from "react-router";
+import { GraduationCap, Eye, EyeOff, Lock, Mail, AlertCircle } from "lucide-react";
+import { useRole } from "../../context/RoleContext.jsx";
 
-function Login() {
-  const navigate = useNavigate();
+const DEMO_ACCOUNTS = [
+  {
+    role: "student",
+    email: "lan.nguyen@student.edu.vn",
+    label: "Sinh viên",
+    color: "#2563eb",
+    bg: "#dbeafe"
+  },
+  {
+    role: "lecturer",
+    email: "an.nguyen@edu.vn",
+    label: "Giảng viên",
+    color: "#8b5cf6",
+    bg: "#ede9fe"
+  },
+  {
+    role: "admin",
+    email: "khoa.tran@admin.edu.vn",
+    label: "Quản trị",
+    color: "#10b981",
+    bg: "#d1fae5"
+  },
+  {
+    role: "advisor", // Lưu ý: Đổi thành ADVISOR cho khớp với DEMO_USERS của bạn
+    email: "hoa.pham@edu.vn",
+    label: "Cố vấn",
+    color: "#f59e0b",
+    bg: "#fef3c7"
+  },
+];
 
-  const [formData, setFormData] = useState({
-    identifier: '', // Student ID or staff email
-    password: '',
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+export function Login() {
+  const [email,    setEmail]    = useState("");
+  const [password, setPassword] = useState("");
+  const [showPw,   setShowPw]   = useState(false);
+  const [error,    setError]    = useState("");
+  const [loading,  setLoading]  = useState(false);
+  const { login } = useRole();
+  const navigate  = useNavigate();
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
+  function fillDemo(acc) {
+    setEmail(acc.email);
+    setPassword("Demo@123456");
+    setError("");
+  }
 
-    setFormData((current) => ({
-      ...current,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    setError('');
+  function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
     setLoading(true);
 
-    try {
-      // Call the service which posts to /api/auth/login
-      const data = await AuthService.login({
-        identifier: formData.identifier,
-        password: formData.password,
-      });
+    // 1. Chuẩn hóa dữ liệu nhập vào
+    const cleanEmail = email.trim().toLowerCase();
 
-      // Backend should return { token, user }
-      const { token, user } = data;
+    setTimeout(() => {
+      // 2. Tìm tài khoản
+      const found = DEMO_ACCOUNTS.find((a) => a.email.toLowerCase() === cleanEmail);
 
-      // Persist token and user for later API calls / RBAC checks
-      localStorage.setItem('sms_access_token', token);
-      localStorage.setItem('sms_user', JSON.stringify(user));
+      if (found && password === "Demo@123456") {
+        console.log("Tìm thấy user:", found.role);
 
-      // RBAC redirect logic based on the user's role.
-      // The role values are expected from backend to be one of: STUDENT, LECTURER, ACADEMIC_ADMIN, IT_ADMIN
-      // Map each role to the appropriate landing page.
-      const role = (user && user.role) || '';
+        // 3. Gọi hàm login từ Context
+        login(found.role);
 
-      switch (role) {
-        case 'STUDENT':
-          // Students go to the course registration area
-          navigate('/student/registrations');
-          break;
-        case 'LECTURER':
-          // Lecturers land on the grade input workflow
-          navigate('/lecturer/grades');
-          break;
-        case 'ACADEMIC_ADMIN':
-          // Academic admins manage course sections
-          navigate('/admin/course-sections');
-          break;
-        case 'IT_ADMIN':
-          // IT admins manage users
-          navigate('/admin/accounts');
-          break;
-        default:
-          // Fallback to dashboard when role is unknown
-          navigate('/dashboard');
+        //
+        console.log("Đã đăng nhập với role:", found.role);
+        // Nếu nó hiện 'student' là đúng, nếu hiện 'STUDENT' là bạn chưa sửa file Login hoặc RoleContext.
+        navigate("/");
+        //
+
+        // 4. CHỐT CHẶN: Dùng replace để không quay lại trang login khi nhấn Back
+        console.log("Đang chuyển trang...");
+        navigate("/", { replace: true });
+
+      } else {
+        setError("Email hoặc mật khẩu không đúng.");
+        setLoading(false);
       }
-    } catch (err) {
-      // Present a friendly error message
-      setError(err?.message || 'Invalid credentials');
-    } finally {
-      setLoading(false);
-    }
-  };
+    }, 500); // Giảm thời gian chờ xuống cho mượt
+  }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-100 px-4">
-      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-xl">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-blue-700">Student Management System</h1>
-          <p className="mt-2 text-sm text-slate-500">Đăng nhập để tiếp tục quản lý hệ thống sinh viên</p>
+    <div
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{ background: "linear-gradient(135deg, #0f172a 0%, #1a3461 60%, #1e3a8a 100%)" }}
+    >
+      <div style={{ width: "100%", maxWidth: 440 }}>
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <div style={{ width: 60, height: 60, borderRadius: 18, backgroundColor: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", boxShadow: "0 8px 24px rgba(37,99,235,0.4)" }}>
+            <GraduationCap size={30} color="white" />
+          </div>
+          <h1 style={{ color: "white", fontSize: "1.5rem", fontWeight: 800 }}>EduPortal</h1>
+          <p style={{ color: "#93c5fd", fontSize: "0.85rem", marginTop: 4 }}>Hệ thống Quản lý Sinh viên</p>
         </div>
 
-        <form className="space-y-5" onSubmit={handleSubmit}>
-          <div>
-            <label htmlFor="identifier" className="mb-2 block text-left text-sm font-medium text-slate-700">
-              Student ID / Staff Email
-            </label>
-            <input
-              id="identifier"
-              name="identifier"
-              type="text"
-              value={formData.identifier}
-              onChange={handleChange}
-              placeholder="e.g. SV001 or admin@example.com"
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-              required
-            />
+        {/* Card */}
+        <div style={{ backgroundColor: "#fff", borderRadius: 24, padding: 32, boxShadow: "0 24px 60px rgba(0,0,0,0.3)" }}>
+          <h2 style={{ color: "#1e293b", fontSize: "1.2rem", fontWeight: 700, marginBottom: 4 }}>Đăng nhập</h2>
+          <p style={{ color: "#64748b", fontSize: "0.82rem", marginBottom: 24 }}>Nhập thông tin tài khoản để tiếp tục</p>
+
+          {error && (
+            <div className="flex items-center gap-2 p-3 rounded-xl mb-4" style={{ backgroundColor: "#fef2f2", border: "1px solid #fecaca" }}>
+              <AlertCircle size={15} color="#ef4444" />
+              <p style={{ fontSize: "0.78rem", color: "#ef4444" }}>{error}</p>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "#334155", display: "block", marginBottom: 6 }}>
+                Email <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              <div style={{ position: "relative" }}>
+                <Mail size={15} color="#94a3b8" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your.email@edu.vn"
+                  style={{ width: "100%", paddingLeft: 38, paddingRight: 14, paddingTop: 11, paddingBottom: 11, borderRadius: 12, border: "1px solid #e2e8f0", fontSize: "0.88rem", color: "#334155", outline: "none" }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "#334155" }}>
+                  Mật khẩu <span style={{ color: "#ef4444" }}>*</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => navigate("/forgot-password")}
+                  style={{ fontSize: "0.75rem", color: "#2563eb", background: "none", border: "none", cursor: "pointer" }}
+                >
+                  Quên mật khẩu?
+                </button>
+              </div>
+              <div style={{ position: "relative" }}>
+                <Lock size={15} color="#94a3b8" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
+                <input
+                  type={showPw ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  style={{ width: "100%", paddingLeft: 38, paddingRight: 42, paddingTop: 11, paddingBottom: 11, borderRadius: 12, border: "1px solid #e2e8f0", fontSize: "0.88rem", color: "#334155", outline: "none" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw((v) => !v)}
+                  style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer" }}
+                >
+                  {showPw ? <EyeOff size={15} color="#94a3b8" /> : <Eye size={15} color="#94a3b8" />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 rounded-xl"
+              style={{ backgroundColor: loading ? "#93c5fd" : "#1a3461", color: "white", border: "none", cursor: loading ? "wait" : "pointer", fontSize: "0.92rem", fontWeight: 700, marginTop: 8 }}
+            >
+              {loading ? "Đang đăng nhập…" : "Đăng nhập"}
+            </button>
+          </form>
+
+          {/* Demo accounts */}
+          <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid #f1f5f9" }}>
+            <p style={{ fontSize: "0.72rem", color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
+              Tài khoản Demo — click để điền tự động
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {DEMO_ACCOUNTS.map((acc) => (
+                <button
+                  key={acc.role}
+                  type="button"
+                  onClick={() => fillDemo(acc)}
+                  style={{
+                    padding: "9px 10px", borderRadius: 10, textAlign: "left", cursor: "pointer",
+                    backgroundColor: acc.bg,
+                    border: `1px solid ${acc.color}30`,
+                  }}
+                >
+                  <p style={{ fontSize: "0.78rem", fontWeight: 700, color: acc.color }}>{acc.label}</p>
+                  <p style={{ fontSize: "0.62rem", color: "#64748b", marginTop: 1 }} className="truncate">{acc.email}</p>
+                </button>
+              ))}
+            </div>
+            <p style={{ fontSize: "0.65rem", color: "#94a3b8", marginTop: 8, textAlign: "center" }}>Mật khẩu demo: <code style={{ backgroundColor: "#f1f5f9", padding: "1px 5px", borderRadius: 4 }}>Demo@123456</code></p>
           </div>
-
-          <div>
-            <label htmlFor="password" className="mb-2 block text-left text-sm font-medium text-slate-700">
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Enter your password"
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-              required
-            />
-          </div>
-
-          {error ? <div className="text-sm text-red-600">{error}</div> : null}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className={[
-              'w-full rounded-xl px-4 py-3 font-semibold text-white shadow transition',
-              loading ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700',
-            ].join(' ')}
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
-
-        {/* No registration or sign-up links by design (accounts are pre-provisioned) */}
+        </div>
       </div>
     </div>
   );
