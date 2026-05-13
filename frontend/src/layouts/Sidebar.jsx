@@ -10,7 +10,7 @@ import { useRole } from "../context/RoleContext";
 
 const NAV_BY_ROLE = {
   student: [
-    { path: "/",                    label: "Bảng điều khiển",  icon: LayoutDashboard },
+    { path: "/student/dashboard",                    label: "Bảng điều khiển",  icon: LayoutDashboard },
     { path: "/student/registrations",label: "Đăng ký môn học",  icon: BookOpen },
     { path: "/student/timetable",   label: "Thời khóa biểu",   icon: Calendar },
     { path: "/student/grades",      label: "Bảng điểm",         icon: Award },
@@ -18,23 +18,23 @@ const NAV_BY_ROLE = {
     { path: "/student/requests",    label: "Yêu cầu học vụ",    icon: FileText },
   ],
   lecturer: [
-    { path: "/",                       label: "Bảng điều khiển",  icon: LayoutDashboard },
+    { path: "/lecturer/dashboard",                       label: "Bảng điều khiển",  icon: LayoutDashboard },
     { path: "/lecturer/roster",        label: "Danh sách lớp",    icon: Users },
     { path: "/lecturer/grades",        label: "Nhập điểm",         icon: Award },
     { path: "/lecturer/attendance",    label: "Điểm danh",         icon: CheckSquare },
-    { path: "/lecturer/communication", label: "Thông báo & Liên lạc", icon: MessageSquare },
+    { path: "/lecturer/communications", label: "Thông báo & Liên lạc", icon: MessageSquare },
     { path: "/lecturer/timetable",     label: "Lịch giảng dạy",   icon: CalendarRange },
   ],
   admin: [
-    { path: "/",                    label: "Bảng điều khiển",       icon: LayoutDashboard },
+    { path: "/admin/dashboard",                    label: "Bảng điều khiển",       icon: LayoutDashboard },
     { path: "/admin/courses",       label: "Quản lý Lớp học phần",  icon: BookMarked },
     { path: "/admin/curriculum",    label: "Quản lý Chương trình",  icon: FolderOpen },
-    { path: "/admin/status",        label: "Trạng thái Sinh viên",  icon: AlertTriangle },
-    { path: "/admin/timetable",     label: "Quản lý Thời khóa biểu", icon: CalendarRange },
+    { path: "/admin/student-status",        label: "Trạng thái Sinh viên",  icon: AlertTriangle },
+    { path: "/admin/timetable-manager",     label: "Quản lý Thời khóa biểu", icon: CalendarRange },
     { path: "/admin/logs",          label: "Nhật ký hệ thống",      icon: Settings },
   ],
   advisor: [
-    { path: "/",                     label: "Bảng điều khiển",   icon: LayoutDashboard },
+    { path: "/advisor/dashboard",                     label: "Bảng điều khiển",   icon: LayoutDashboard },
     { path: "/advisor/profiles",     label: "Hồ sơ Sinh viên",   icon: UserCheck },
     { path: "/advisor/requests",     label: "Xử lý Yêu cầu",    icon: ClipboardList },
   ],
