@@ -65,13 +65,13 @@ const RootRedirect = () => {
   if (role === 'admin') return <Navigate to="/admin/dashboard" replace />;
   if (role === 'advisor') return <Navigate to="/advisor/dashboard" replace />;
 
-  return <Navigate to="/login" replace />;
+  return <Navigate to={rolePaths[role] || "/login"} replace />;
 };
 
 const appRouter = createBrowserRouter([
   {
     path: '/',
-    element: <RootRedirect />, // Thay Navigate tĩnh bằng Logic động
+    element: <RootRedirect />,
   },
   // ── Public (no layout) ────────────────────────────────────────────────────
   {
