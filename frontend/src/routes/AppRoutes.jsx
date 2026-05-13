@@ -64,7 +64,7 @@ const RootRedirect = () => {
   if (role === 'admin') return <Navigate to="/admin/dashboard" replace />;
   if (role === 'advisor') return <Navigate to="/advisor/dashboard" replace />;
 
-  return <Navigate to="/dashboard" replace />;
+  return <Navigate to="/login" replace />;
 };
 
 const appRouter = createBrowserRouter([
