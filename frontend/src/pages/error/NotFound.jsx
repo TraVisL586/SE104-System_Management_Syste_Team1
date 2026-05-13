@@ -13,7 +13,7 @@ function NotFound() {
         </p>
 
         <Link
-          to="/dashboard"
+          to="/login"
           className="mt-6 inline-flex rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700"
         >
           Về trang tổng quan
