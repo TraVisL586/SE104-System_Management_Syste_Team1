@@ -3,7 +3,7 @@ package com.example.backend.constant;
 public enum RoleName {
     ADMIN,
     STUDENT,
-    LECTURE,
+    LECTURER,
     ACADEMIC_ADVISOR;
 
     public String value() {
