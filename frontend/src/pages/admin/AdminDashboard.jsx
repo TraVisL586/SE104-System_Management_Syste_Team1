@@ -77,7 +77,7 @@ const actorCards = [
   },
 ];
 
-function Dashboard() {
+function AdminDashboard() {
   return (
     <div className="space-y-8">
       <section className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-sm">
@@ -214,4 +214,4 @@ function Dashboard() {
   );
 }
 
-export default Dashboard;
+export default AdminDashboard;

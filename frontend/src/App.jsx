@@ -1,9 +1,13 @@
 import { RouterProvider } from 'react-router-dom';
 import appRouter from './routes/AppRoutes';
+import { RoleProvider } from './context/RoleContext';
 
-// Minimal change: no AuthProvider required for localStorage-based guard
 function App() {
-  return <RouterProvider router={appRouter} />;
+  return (
+    <RoleProvider>
+      <RouterProvider router={appRouter} />
+    </RoleProvider>
+  );
 }
 
 export default App;

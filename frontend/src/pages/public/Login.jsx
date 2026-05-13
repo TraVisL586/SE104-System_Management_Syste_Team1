@@ -52,7 +52,7 @@ function Login() {
           break;
         case 'LECTURER':
           // Lecturers land on the grade input workflow
-          navigate('/lecturer/input-grades');
+          navigate('/lecturer/grades');
           break;
         case 'ACADEMIC_ADMIN':
           // Academic admins manage course sections
@@ -60,7 +60,7 @@ function Login() {
           break;
         case 'IT_ADMIN':
           // IT admins manage users
-          navigate('/admin/users');
+          navigate('/admin/accounts');
           break;
         default:
           // Fallback to dashboard when role is unknown

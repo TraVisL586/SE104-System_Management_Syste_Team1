@@ -17,7 +17,7 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
     const role = user.role || '';
     if (!allowedRoles.includes(role)) {
       // Authenticated but not authorized -> redirect to dashboard
-      return <Navigate to="/dashboard" replace />;
+      return <Navigate to="/unauthorized" replace />;
     }
   }
 
