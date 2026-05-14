@@ -12,10 +12,10 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
 
   if (allowedRoles && allowedRoles.length > 0) {
     // Ép role của user về chữ thường để so sánh an toàn
-    const role = (user.role || '').toLowerCase(); 
+    const role = (user.role || '').toUpperCase();
     
     // Ép toàn bộ mảng allowedRoles về chữ thường
-    const normalizedAllowedRoles = allowedRoles.map(r => r.toLowerCase());
+    const normalizedAllowedRoles = allowedRoles.map(r => r.toUpperCase());
 
     if (!normalizedAllowedRoles.includes(role)) {
       return <Navigate to="/unauthorized" replace />;

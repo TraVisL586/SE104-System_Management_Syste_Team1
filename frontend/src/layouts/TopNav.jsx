@@ -5,35 +5,35 @@ import { useNavigate } from "react-router-dom";
 import { useRole } from "../context/RoleContext";
 
 const ROLE_LABELS = {
-  student:  "Sinh viên",
-  lecturer: "Giảng viên",
-  admin:    "Quản trị Đào tạo",
-  advisor:  "Cố vấn Học tập",
-  public:   "Công khai",
+  STUDENT:  "Sinh viên",
+  LECTURER: "Giảng viên",
+  ADMIN:    "Quản trị Đào tạo",
+  ACADEMIC_ADVISOR:  "Cố vấn Học tập",
+  PUBLIC:   "Công khai",
 };
 
 const ROLE_COLORS = {
-  student:  { bg: "#1a3461", color: "#2563eb", light: "#dbeafe" },
-  lecturer: { bg: "#5b21b6", color: "#8b5cf6", light: "#ede9fe" },
-  admin:    { bg: "#065f46", color: "#10b981", light: "#d1fae5" },
-  advisor:  { bg: "#92400e", color: "#f59e0b", light: "#fef3c7" },
-  public:   { bg: "#334155", color: "#64748b", light: "#f1f5f9" },
+  STUDENT:  { bg: "#1a3461", color: "#2563eb", light: "#dbeafe" },
+  LECTURER: { bg: "#5b21b6", color: "#8b5cf6", light: "#ede9fe" },
+  ADMIN:    { bg: "#065f46", color: "#10b981", light: "#d1fae5" },
+  ACADEMIC_ADVISOR:  { bg: "#92400e", color: "#f59e0b", light: "#fef3c7" },
+  PUBLIC:   { bg: "#334155", color: "#64748b", light: "#f1f5f9" },
 };
 
 const DEMO_USERS = {
-  student:  { name: "Nguyễn Thị Lan",   id: "SV.2023.00847", avatarInitials: "NL" },
-  lecturer: { name: "GS. Nguyễn Văn An", id: "GV.2015.00124", avatarInitials: "NA" },
-  admin:    { name: "Trần Minh Khoa",    id: "AD.2020.00031", avatarInitials: "TK" },
-  advisor:  { name: "TS. Phạm Thị Hoa",  id: "TV.2018.00056", avatarInitials: "PH" },
-  public:   { name: "Khách",             id: "PUBLIC",        avatarInitials: "KH" },
+  STUDENT:  { name: "Nguyễn Thị Lan",   id: "SV.2023.00847", avatarInitials: "NL" },
+  LECTURER: { name: "GS. Nguyễn Văn An", id: "GV.2015.00124", avatarInitials: "NA" },
+  ADMIN:    { name: "Trần Minh Khoa",    id: "AD.2020.00031", avatarInitials: "TK" },
+  ACADEMIC_ADVISOR:  { name: "TS. Phạm Thị Hoa",  id: "TV.2018.00056", avatarInitials: "PH" },
+  PUBLIC:   { name: "Khách",             id: "PUBLIC",        avatarInitials: "KH" },
 };
 
 const SWITCH_ROLES = [
-  { role: "student",  label: "Sinh viên",         icon: BookOpen },
-  { role: "lecturer", label: "Giảng viên",         icon: Users },
-  { role: "admin",    label: "Quản trị Đào tạo",   icon: Shield },
-  { role: "advisor",  label: "Cố vấn Học tập",     icon: UserCheck },
-  { role: "public",   label: "Công khai",           icon: Globe },
+  { role: "STUDENT",  label: "Sinh viên",         icon: BookOpen },
+  { role: "LECTURER", label: "Giảng viên",         icon: Users },
+  { role: "ADMIN",    label: "Quản trị Đào tạo",   icon: Shield },
+  { role: "ACADEMIC_ADVISOR",  label: "Cố vấn Học tập",     icon: UserCheck },
+  { role: "PUBLIC",   label: "Công khai",           icon: Globe },
 ];
 
 const NOTIFICATIONS = [
@@ -53,9 +53,9 @@ export function TopNav({ onMenuToggle }) {
   const navigate   = useNavigate();
   const { user, login, logout } = useRole();
 
-  const role       = user?.role ?? "public";
-  const roleColor  = ROLE_COLORS[role];
-  const unread     = NOTIFICATIONS.filter((n) => n.unread).length;
+  const role = user?.role || "PUBLIC";
+  const roleColor = ROLE_COLORS[role.toUpperCase()] || ROLE_COLORS.PUBLIC;
+  const unread = 0;
 
   useEffect(() => {
     function handler(e) {
