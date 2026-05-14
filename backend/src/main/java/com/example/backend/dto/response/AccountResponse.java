@@ -16,6 +16,7 @@ public class AccountResponse {
     private Boolean isActive;
     private List<String> roles;
 
+    private Integer profileId;
     private String profileType;
     private String profileCode;
     private String phone;
