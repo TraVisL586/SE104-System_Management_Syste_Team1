@@ -2,8 +2,7 @@ package com.example.backend.service;
 
 import com.example.backend.constant.RoleName;
 import com.example.backend.dto.request.ChangePasswordRequest;
-import com.example.backend.dto.request.CreateStudentRequest;
-import com.example.backend.dto.request.UpdateStudentRequest;
+import com.example.backend.dto.request.StudentRequest;
 import com.example.backend.dto.response.StudentResponse;
 import com.example.backend.entity.Role;
 import com.example.backend.entity.Student;
@@ -18,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -30,16 +28,27 @@ public class StudentService {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
-    public StudentResponse createStudent(CreateStudentRequest request) {
-        if (userRepository.existsByUsername(request.getUsername()))
-            throw new RuntimeException("Username đã tồn tại");
-        if (userRepository.existsByEmail(request.getEmail()))
-            throw new RuntimeException("Email đã tồn tại");
-        if (studentRepository.existsByStudentCode(request.getStudentCode()))
-            throw new RuntimeException("Mã sinh viên đã tồn tại");
+    public StudentResponse createStudent(StudentRequest request) {
+        validateRequired(request.getUsername(), "Username is required");
+        validateRequired(request.getPassword(), "Password is required");
+        validateRequired(request.getEmail(), "Email is required");
+        validateRequired(request.getFullName(), "Full name is required");
+        validateRequired(request.getStudentCode(), "Student code is required");
+
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new RuntimeException("Username already exists");
+        }
+
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("Email already exists");
+        }
+
+        if (studentRepository.existsByStudentCode(request.getStudentCode())) {
+            throw new RuntimeException("Student code already exists");
+        }
 
         Role studentRole = roleRepository.findByName(RoleName.STUDENT)
-                .orElseThrow(() -> new RuntimeException("Role STUDENT chưa được tạo trong DB"));
+                .orElseThrow(() -> new RuntimeException("Role STUDENT does not exist"));
 
         User user = new User();
         user.setUsername(request.getUsername());
@@ -66,38 +75,51 @@ public class StudentService {
         return studentRepository.findAll()
                 .stream()
                 .map(this::mapToResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public StudentResponse getStudentById(Integer id) {
         Student student = studentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy sinh viên"));
+                .orElseThrow(() -> new RuntimeException("Student not found"));
         return mapToResponse(student);
     }
 
     public StudentResponse getStudentByUsername(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
         Student student = studentRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy sinh viên"));
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
         return mapToResponse(student);
     }
 
     @Transactional
-    public StudentResponse updateStudent(Integer id, UpdateStudentRequest request) {
+    public StudentResponse updateStudent(Integer id, StudentRequest request) {
+        validateRequired(request.getEmail(), "Email is required");
+        validateRequired(request.getFullName(), "Full name is required");
+
         Student student = studentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy sinh viên"));
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        User user = student.getUser();
+
+        if (!user.getEmail().equals(request.getEmail())
+                && userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("Email already exists");
+        }
 
         student.setFullName(request.getFullName());
         student.setEmail(request.getEmail());
         student.setPhone(request.getPhone());
         student.setDateOfBirth(request.getDateOfBirth());
 
-        User user = student.getUser();
         user.setFullName(request.getFullName());
         user.setEmail(request.getEmail());
-        if (request.getIsActive() != null)
+
+        if (request.getIsActive() != null) {
             user.setIsActive(request.getIsActive());
+        }
 
         userRepository.save(user);
         studentRepository.save(student);
@@ -108,7 +130,8 @@ public class StudentService {
     @Transactional
     public void deleteStudent(Integer id) {
         Student student = studentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy sinh viên"));
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
         studentRepository.delete(student);
         userRepository.delete(student.getUser());
     }
@@ -116,28 +139,37 @@ public class StudentService {
     @Transactional
     public void changePassword(String username, ChangePasswordRequest request) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword()))
-            throw new RuntimeException("Mật khẩu cũ không đúng");
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            throw new RuntimeException("Old password is incorrect");
+        }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
     }
 
-    private StudentResponse mapToResponse(Student student) {
-        StudentResponse res = new StudentResponse();
-        res.setId(student.getId());
-        res.setStudentCode(student.getStudentCode());
-        res.setFullName(student.getFullName());
-        res.setEmail(student.getEmail());
-        res.setPhone(student.getPhone());
-        res.setDateOfBirth(student.getDateOfBirth());
-        res.setCreatedAt(student.getCreatedAt());
-        if (student.getUser() != null) {
-            res.setUsername(student.getUser().getUsername());
-            res.setIsActive(student.getUser().getIsActive());
+    private void validateRequired(String value, String message) {
+        if (value == null || value.isBlank()) {
+            throw new RuntimeException(message);
         }
-        return res;
+    }
+
+    private StudentResponse mapToResponse(Student student) {
+        StudentResponse response = new StudentResponse();
+        response.setId(student.getId());
+        response.setStudentCode(student.getStudentCode());
+        response.setFullName(student.getFullName());
+        response.setEmail(student.getEmail());
+        response.setPhone(student.getPhone());
+        response.setDateOfBirth(student.getDateOfBirth());
+        response.setCreatedAt(student.getCreatedAt());
+
+        if (student.getUser() != null) {
+            response.setUsername(student.getUser().getUsername());
+            response.setIsActive(student.getUser().getIsActive());
+        }
+
+        return response;
     }
 }
