@@ -10,6 +10,8 @@ import com.example.backend.entity.User;
 import com.example.backend.repository.RoleRepository;
 import com.example.backend.repository.StudentRepository;
 import com.example.backend.repository.UserRepository;
+import com.example.backend.constant.StudentAcademicStatus;
+import com.example.backend.dto.request.StudentAcademicStatusRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -66,6 +68,7 @@ public class StudentService {
         student.setEmail(request.getEmail());
         student.setPhone(request.getPhone());
         student.setDateOfBirth(request.getDateOfBirth());
+        student.setAcademicStatus(StudentAcademicStatus.STUDYING);
         studentRepository.save(student);
 
         return mapToResponse(student);
@@ -149,6 +152,17 @@ public class StudentService {
         userRepository.save(user);
     }
 
+    @Transactional
+    public StudentResponse updateAcademicStatus(Integer id, StudentAcademicStatusRequest request) {
+        Student student = studentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        student.setAcademicStatus(request.getAcademicStatus());
+        studentRepository.save(student);
+
+        return mapToResponse(student);
+    }
+
     private void validateRequired(String value, String message) {
         if (value == null || value.isBlank()) {
             throw new RuntimeException(message);
@@ -164,6 +178,7 @@ public class StudentService {
         response.setPhone(student.getPhone());
         response.setDateOfBirth(student.getDateOfBirth());
         response.setCreatedAt(student.getCreatedAt());
+        response.setAcademicStatus(student.getAcademicStatus());
 
         if (student.getUser() != null) {
             response.setUsername(student.getUser().getUsername());

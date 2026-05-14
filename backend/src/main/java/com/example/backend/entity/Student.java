@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import com.example.backend.constant.StudentAcademicStatus;
 
 @Entity
 @Table(name = "students")
@@ -34,4 +35,8 @@ public class Student {
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "academic_status", nullable = false)
+    private StudentAcademicStatus academicStatus = StudentAcademicStatus.STUDYING;
 }
