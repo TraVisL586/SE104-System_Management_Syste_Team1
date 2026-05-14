@@ -174,12 +174,14 @@ public class AccountService {
                 .toList());
 
         studentRepository.findByUserId(user.getId()).ifPresent(student -> {
+            response.setProfileId(student.getId());
             response.setProfileType("STUDENT");
             response.setProfileCode(student.getStudentCode());
             response.setPhone(student.getPhone());
         });
 
         lecturerRepository.findByUserId(user.getId()).ifPresent(lecturer -> {
+            response.setProfileId(lecturer.getId());
             response.setProfileType("LECTURER");
             response.setProfileCode(lecturer.getLecturerCode());
             response.setPhone(lecturer.getPhone());
@@ -187,6 +189,7 @@ public class AccountService {
         });
 
         academicAdvisorRepository.findByUserId(user.getId()).ifPresent(advisor -> {
+            response.setProfileId(advisor.getId());
             response.setProfileType("ACADEMIC_ADVISOR");
             response.setProfileCode(advisor.getAdvisorCode());
             response.setPhone(advisor.getPhone());
