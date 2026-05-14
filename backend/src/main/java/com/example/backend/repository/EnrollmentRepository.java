@@ -15,6 +15,8 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Integer>
 
     List<Enrollment> findByStudentIdAndStatus(Integer studentId, EnrollmentStatus status);
 
+    List<Enrollment> findByCourseSectionIdAndStatus(Integer courseSectionId, EnrollmentStatus status);
+
     List<Enrollment> findByStudentIdAndCourseSectionSemesterIdAndStatus(
             Integer studentId,
             Integer semesterId,
@@ -39,6 +41,12 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Integer>
     boolean existsByStudentIdAndCourseSectionCourseIdAndStatus(
             Integer studentId,
             Integer courseId,
+            EnrollmentStatus status
+    );
+
+    boolean existsByStudentIdAndCourseSectionIdAndStatus(
+            Integer studentId,
+            Integer courseSectionId,
             EnrollmentStatus status
     );
 }
