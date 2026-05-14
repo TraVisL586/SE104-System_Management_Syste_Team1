@@ -5,28 +5,28 @@ import { useRole } from "../../context/RoleContext.jsx";
 
 const DEMO_ACCOUNTS = [
   {
-    role: "student",
+    role: "STUDENT",
     email: "lan.nguyen@student.edu.vn",
     label: "Sinh viên",
     color: "#2563eb",
     bg: "#dbeafe"
   },
   {
-    role: "lecturer",
+    role: "LECTURER",
     email: "an.nguyen@edu.vn",
     label: "Giảng viên",
     color: "#8b5cf6",
     bg: "#ede9fe"
   },
   {
-    role: "admin",
+    role: "ADMIN",
     email: "khoa.tran@admin.edu.vn",
     label: "Quản trị",
     color: "#10b981",
     bg: "#d1fae5"
   },
   {
-    role: "advisor", // Lưu ý: Đổi thành ADVISOR cho khớp với DEMO_USERS của bạn
+    role: "ACADEMIC_ADVISOR", // Lưu ý: Đổi thành ADVISOR cho khớp với DEMO_USERS của bạn
     email: "hoa.pham@edu.vn",
     label: "Cố vấn",
     color: "#f59e0b",

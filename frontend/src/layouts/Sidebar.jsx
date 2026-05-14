@@ -9,7 +9,7 @@ import {
 import { useRole } from "../context/RoleContext";
 
 const NAV_BY_ROLE = {
-  student: [
+  STUDENT: [
     { path: "/student/dashboard",                    label: "Bảng điều khiển",  icon: LayoutDashboard },
     { path: "/student/registrations",label: "Đăng ký môn học",  icon: BookOpen },
     { path: "/student/timetable",   label: "Thời khóa biểu",   icon: Calendar },
@@ -17,7 +17,7 @@ const NAV_BY_ROLE = {
     { path: "/student/fees",        label: "Học phí",            icon: CreditCard },
     { path: "/student/requests",    label: "Yêu cầu học vụ",    icon: FileText },
   ],
-  lecturer: [
+  LECTURER: [
     { path: "/lecturer/dashboard",                       label: "Bảng điều khiển",  icon: LayoutDashboard },
     { path: "/lecturer/roster",        label: "Danh sách lớp",    icon: Users },
     { path: "/lecturer/grades",        label: "Nhập điểm",         icon: Award },
@@ -25,7 +25,7 @@ const NAV_BY_ROLE = {
     { path: "/lecturer/communications", label: "Thông báo & Liên lạc", icon: MessageSquare },
     { path: "/lecturer/timetable",     label: "Lịch giảng dạy",   icon: CalendarRange },
   ],
-  admin: [
+  ADMIN: [
     { path: "/admin/dashboard",                    label: "Bảng điều khiển",       icon: LayoutDashboard },
     { path: "/admin/courses",       label: "Quản lý Lớp học phần",  icon: BookMarked },
     { path: "/admin/curriculum",    label: "Quản lý Chương trình",  icon: FolderOpen },
@@ -33,38 +33,38 @@ const NAV_BY_ROLE = {
     { path: "/admin/timetable-manager",     label: "Quản lý Thời khóa biểu", icon: CalendarRange },
     { path: "/admin/logs",          label: "Nhật ký hệ thống",      icon: Settings },
   ],
-  advisor: [
+  ACADEMIC_ADVISOR: [
     { path: "/advisor/dashboard",                     label: "Bảng điều khiển",   icon: LayoutDashboard },
     { path: "/advisor/profiles",     label: "Hồ sơ Sinh viên",   icon: UserCheck },
     { path: "/advisor/requests",     label: "Xử lý Yêu cầu",    icon: ClipboardList },
   ],
-  public: [
+  PUBLIC: [
     { path: "/login", label: "Đăng nhập", icon: GraduationCap },
   ],
 };
 
 const ROLE_LABELS = {
-  student:  "Sinh viên",
-  lecturer: "Giảng viên",
-  admin:    "Quản trị Đào tạo",
-  advisor:  "Cố vấn Học tập",
-  public:   "Công khai",
+  STUDENT:  "Sinh viên",
+  LECTURER: "Giảng viên",
+  ADMIN:    "Quản trị Đào tạo",
+  ACADEMIC_ADVISOR:  "Cố vấn Học tập",
+  PUBLIC:   "Công khai",
 };
 
 const ROLE_COLORS = {
-  student:  { bg: "#1a3461", color: "#2563eb", light: "#dbeafe" },
-  lecturer: { bg: "#5b21b6", color: "#8b5cf6", light: "#ede9fe" },
-  admin:    { bg: "#065f46", color: "#10b981", light: "#d1fae5" },
-  advisor:  { bg: "#92400e", color: "#f59e0b", light: "#fef3c7" },
-  public:   { bg: "#334155", color: "#64748b", light: "#f1f5f9" },
+  STUDENT:  { bg: "#1a3461", color: "#2563eb", light: "#dbeafe" },
+  LECTURER: { bg: "#5b21b6", color: "#8b5cf6", light: "#ede9fe" },
+  ADMIN:    { bg: "#065f46", color: "#10b981", light: "#d1fae5" },
+  ACADEMIC_ADVISOR:  { bg: "#92400e", color: "#f59e0b", light: "#fef3c7" },
+  PUBLIC:   { bg: "#334155", color: "#64748b", light: "#f1f5f9" },
 };
 
 const SECTION_LABEL = {
-  student:  "Menu Sinh viên",
-  lecturer: "Menu Giảng viên",
-  admin:    "Menu Quản trị",
-  advisor:  "Menu Cố vấn",
-  public:   "Công khai",
+  STUDENT  :  "Menu Sinh viên",
+  LECTURER: "Menu Giảng viên",
+  ADMIN:    "Menu Quản trị",
+  ACADEMIC_ADVISOR:  "Menu Cố vấn",
+  PUBLIC:   "Công khai",
 };
 
 export function Sidebar({ open, onClose }) {
@@ -72,7 +72,7 @@ export function Sidebar({ open, onClose }) {
   const navigate = useNavigate();
   const { user, logout } = useRole();
 
-  const role = user?.role ?? "public";
+  const role = user?.role ?? "PUBLIC";
   const navItems = NAV_BY_ROLE[role] ?? [];
   const roleColor = ROLE_COLORS[role];
 

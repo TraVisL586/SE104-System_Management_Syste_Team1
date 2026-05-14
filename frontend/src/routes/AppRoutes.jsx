@@ -51,20 +51,20 @@ import AcademicRequests from '../pages/student/AcademicRequests';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-const ADMIN_ROLES = ['admin', 'academic_admin'];
-const ADVISOR_ROLES = ['advisor', 'admin'];
+const ADMIN_ROLES = ['ADMIN', 'ACADEMIC_ADMIN'];
+const ADVISOR_ROLES = ['ADMIN', 'ACADEMIC_ADVISOR'];
 
 const RootRedirect = () => {
   const { isAuthenticated, role } = useRole();
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
-  // ĐẢM BẢO LÀ CHỮ THƯỜNG
-  if (role === 'student') return <Navigate to="/student/dashboard" replace />;
-  if (role === 'lecturer') return <Navigate to="/lecturer/dashboard" replace />;
-  if (role === 'admin') return <Navigate to="/admin/dashboard" replace />;
-  if (role === 'advisor') return <Navigate to="/advisor/dashboard" replace />;
-
+  const rolePaths = {
+      STUDENT: "/student/dashboard",
+      LECTURER: "/lecturer/dashboard",
+      ADMIN: "/admin/dashboard",
+      ACADEMIC_ADVISOR: "/advisor/dashboard"
+    };
   return <Navigate to={rolePaths[role] || "/login"} replace />;
 };
 
@@ -102,7 +102,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/student',
         element: (
-          <ProtectedRoute allowedRoles={['student']}>
+          <ProtectedRoute allowedRoles={['STUDENT']}>
             <StudentDashboard />
           </ProtectedRoute>
         ),
@@ -110,7 +110,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/student/dashboard',
         element: (
-          <ProtectedRoute allowedRoles={['student']}>
+          <ProtectedRoute allowedRoles={['STUDENT']}>
             <StudentDashboard />
           </ProtectedRoute>
         ),
@@ -118,7 +118,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/student/registrations',
         element: (
-          <ProtectedRoute allowedRoles={['student']}>
+          <ProtectedRoute allowedRoles={['STUDENT']}>
             <Registrations />
           </ProtectedRoute>
         ),
@@ -126,7 +126,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/student/timetable',
         element: (
-          <ProtectedRoute allowedRoles={['student']}>
+          <ProtectedRoute allowedRoles={['STUDENT']}>
             <StudentTimetable />
           </ProtectedRoute>
         ),
@@ -134,7 +134,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/student/grades',
         element: (
-          <ProtectedRoute allowedRoles={['student']}>
+          <ProtectedRoute allowedRoles={['STUDENT']}>
             <Grades />
           </ProtectedRoute>
         ),
@@ -142,7 +142,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/student/fees',
         element: (
-          <ProtectedRoute allowedRoles={['student']}>
+          <ProtectedRoute allowedRoles={['STUDENT']}>
             <TuitionFees />
           </ProtectedRoute>
         ),
@@ -150,7 +150,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/student/requests',
         element: (
-          <ProtectedRoute allowedRoles={['student']}>
+          <ProtectedRoute allowedRoles={['STUDENT']}>
             <AcademicRequests />
           </ProtectedRoute>
         ),
@@ -160,7 +160,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/lecturer',
         element: (
-          <ProtectedRoute allowedRoles={['lecturer']}>
+          <ProtectedRoute allowedRoles={['LECTURER']}>
             <LecturerDashboard />
           </ProtectedRoute>
         ),
@@ -168,7 +168,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/lecturer/dashboard',
         element: (
-          <ProtectedRoute allowedRoles={['lecturer']}>
+          <ProtectedRoute allowedRoles={['LECTURER']}>
             <LecturerDashboard />
           </ProtectedRoute>
         ),
@@ -176,7 +176,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/lecturer/grades',
         element: (
-          <ProtectedRoute allowedRoles={['lecturer']}>
+          <ProtectedRoute allowedRoles={['LECTURER']}>
             <GradeEntry />
           </ProtectedRoute>
         ),
@@ -184,7 +184,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/lecturer/attendance',
         element: (
-          <ProtectedRoute allowedRoles={['lecturer']}>
+          <ProtectedRoute allowedRoles={['LECTURER']}>
             <Attendance />
           </ProtectedRoute>
         ),
@@ -192,7 +192,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/lecturer/communications',
         element: (
-          <ProtectedRoute allowedRoles={['lecturer']}>
+          <ProtectedRoute allowedRoles={['LECTURER']}>
             <Communications />
           </ProtectedRoute>
         ),
@@ -200,7 +200,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/lecturer/roster',
         element: (
-          <ProtectedRoute allowedRoles={['lecturer']}>
+          <ProtectedRoute allowedRoles={['LECTURER']}>
             <ClassRoster />
           </ProtectedRoute>
         ),
@@ -208,7 +208,7 @@ const appRouter = createBrowserRouter([
       {
         path: '/lecturer/timetable',
         element: (
-          <ProtectedRoute allowedRoles={['lecturer']}>
+          <ProtectedRoute allowedRoles={['LECTURER']}>
             <LecturerTimetable />
           </ProtectedRoute>
         ),
