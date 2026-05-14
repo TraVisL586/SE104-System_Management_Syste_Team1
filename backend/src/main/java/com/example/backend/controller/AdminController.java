@@ -1,16 +1,13 @@
 package com.example.backend.controller;
 
-import com.example.backend.dto.request.CreateStudentRequest;
-import com.example.backend.dto.request.UpdateStudentRequest;
-import com.example.backend.dto.response.StudentResponse;
-import com.example.backend.service.StudentService;
-
-import com.example.backend.dto.request.CreateAccountRequest;
+import com.example.backend.dto.request.AccountRequest;
+import com.example.backend.dto.request.AccountStatusRequest;
 import com.example.backend.dto.request.ResetPasswordRequest;
-import com.example.backend.dto.request.UpdateAccountStatusRequest;
+import com.example.backend.dto.request.StudentRequest;
 import com.example.backend.dto.response.AccountResponse;
+import com.example.backend.dto.response.StudentResponse;
 import com.example.backend.service.AccountService;
-
+import com.example.backend.service.StudentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +24,7 @@ public class AdminController {
     private final AccountService accountService;
 
     @PostMapping("/students")
-    public ResponseEntity<StudentResponse> createStudent(@Valid @RequestBody CreateStudentRequest request) {
+    public ResponseEntity<StudentResponse> createStudent(@Valid @RequestBody StudentRequest request) {
         return ResponseEntity.ok(studentService.createStudent(request));
     }
 
@@ -37,14 +34,14 @@ public class AdminController {
     }
 
     @GetMapping("/students/{id:\\d+}")
-        public ResponseEntity<StudentResponse> getStudent(@PathVariable Integer id) {
+    public ResponseEntity<StudentResponse> getStudent(@PathVariable Integer id) {
         return ResponseEntity.ok(studentService.getStudentById(id));
     }
 
     @PutMapping("/students/{id:\\d+}")
     public ResponseEntity<StudentResponse> updateStudent(
             @PathVariable Integer id,
-            @Valid @RequestBody UpdateStudentRequest request) {
+            @Valid @RequestBody StudentRequest request) {
         return ResponseEntity.ok(studentService.updateStudent(id, request));
     }
 
@@ -56,7 +53,7 @@ public class AdminController {
 
     @PostMapping("/accounts")
     public ResponseEntity<AccountResponse> createAccount(
-            @Valid @RequestBody CreateAccountRequest request) {
+            @Valid @RequestBody AccountRequest request) {
         return ResponseEntity.ok(accountService.createAccount(request));
     }
 
@@ -73,7 +70,7 @@ public class AdminController {
     @PatchMapping("/accounts/{id:\\d+}/status")
     public ResponseEntity<AccountResponse> updateAccountStatus(
             @PathVariable Integer id,
-            @Valid @RequestBody UpdateAccountStatusRequest request) {
+            @Valid @RequestBody AccountStatusRequest request) {
         return ResponseEntity.ok(accountService.updateStatus(id, request));
     }
 

@@ -6,8 +6,8 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class UpdateAccountStatusRequest {
+public class CoursePrerequisiteRequest {
 
-    @NotNull(message = "Active status is required")
-    private Boolean isActive;
+    @NotNull(message = "Prerequisite course id is required")
+    private Integer prerequisiteCourseId;
 }

@@ -1,9 +1,9 @@
 package com.example.backend.service;
 
 import com.example.backend.constant.RoleName;
-import com.example.backend.dto.request.CreateAccountRequest;
+import com.example.backend.dto.request.AccountRequest;
+import com.example.backend.dto.request.AccountStatusRequest;
 import com.example.backend.dto.request.ResetPasswordRequest;
-import com.example.backend.dto.request.UpdateAccountStatusRequest;
 import com.example.backend.dto.response.AccountResponse;
 import com.example.backend.entity.*;
 import com.example.backend.repository.*;
@@ -28,7 +28,16 @@ public class AccountService {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
-    public AccountResponse createAccount(CreateAccountRequest request) {
+    public AccountResponse createAccount(AccountRequest request) {
+        validateRequired(request.getUsername(), "Username is required");
+        validateRequired(request.getEmail(), "Email is required");
+        validateRequired(request.getFullName(), "Full name is required");
+        validateRequired(request.getPassword(), "Password is required");
+
+        if (request.getRole() == null) {
+            throw new RuntimeException("Role is required");
+        }
+
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new RuntimeException("Username already exists");
         }
@@ -64,12 +73,11 @@ public class AccountService {
     }
 
     public AccountResponse getAccountById(Integer id) {
-        User user = findUser(id);
-        return mapToResponse(user);
+        return mapToResponse(findUser(id));
     }
 
     @Transactional
-    public AccountResponse updateStatus(Integer id, UpdateAccountStatusRequest request) {
+    public AccountResponse updateStatus(Integer id, AccountStatusRequest request) {
         User user = findUser(id);
         user.setIsActive(request.getIsActive());
         userRepository.save(user);
@@ -89,7 +97,7 @@ public class AccountService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-    private void validateProfileCode(CreateAccountRequest request) {
+    private void validateProfileCode(AccountRequest request) {
         RoleName role = request.getRole();
 
         if (role == RoleName.ADMIN) {
@@ -100,11 +108,13 @@ public class AccountService {
             throw new RuntimeException("Profile code is required");
         }
 
-        if (role == RoleName.STUDENT && studentRepository.existsByStudentCode(request.getProfileCode())) {
+        if (role == RoleName.STUDENT
+                && studentRepository.existsByStudentCode(request.getProfileCode())) {
             throw new RuntimeException("Student code already exists");
         }
 
-        if (role == RoleName.LECTURER && lecturerRepository.existsByLecturerCode(request.getProfileCode())) {
+        if (role == RoleName.LECTURER
+                && lecturerRepository.existsByLecturerCode(request.getProfileCode())) {
             throw new RuntimeException("Lecturer code already exists");
         }
 
@@ -114,7 +124,7 @@ public class AccountService {
         }
     }
 
-    private void createProfile(User user, CreateAccountRequest request) {
+    private void createProfile(User user, AccountRequest request) {
         if (request.getRole() == RoleName.STUDENT) {
             Student student = new Student();
             student.setUser(user);
@@ -188,5 +198,11 @@ public class AccountService {
         }
 
         return response;
+    }
+
+    private void validateRequired(String value, String message) {
+        if (value == null || value.isBlank()) {
+            throw new RuntimeException(message);
+        }
     }
 }
