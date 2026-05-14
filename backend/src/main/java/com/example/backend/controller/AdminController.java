@@ -3,6 +3,7 @@ package com.example.backend.controller;
 import com.example.backend.dto.request.AccountRequest;
 import com.example.backend.dto.request.AccountStatusRequest;
 import com.example.backend.dto.request.ResetPasswordRequest;
+import com.example.backend.dto.request.StudentAcademicStatusRequest;
 import com.example.backend.dto.request.StudentRequest;
 import com.example.backend.dto.response.AccountResponse;
 import com.example.backend.dto.response.StudentResponse;
@@ -43,6 +44,13 @@ public class AdminController {
             @PathVariable Integer id,
             @Valid @RequestBody StudentRequest request) {
         return ResponseEntity.ok(studentService.updateStudent(id, request));
+    }
+
+    @PatchMapping("/students/{id:\\d+}/academic-status")
+    public ResponseEntity<StudentResponse> updateStudentAcademicStatus(
+            @PathVariable Integer id,
+            @Valid @RequestBody StudentAcademicStatusRequest request) {
+        return ResponseEntity.ok(studentService.updateAcademicStatus(id, request));
     }
 
     @DeleteMapping("/students/{id:\\d+}")
