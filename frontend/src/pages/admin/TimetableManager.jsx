@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { CalendarRange, Plus, Edit2, Trash2, AlertTriangle } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { CalendarRange, Plus, Edit2, Trash2, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "../../context/ToastContext";
+import timetableService from "../../services/timetableService";
 
 const DAYS  = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
 const SLOTS = [
@@ -10,20 +11,63 @@ const SLOTS = [
   { id: 4, label: "Tiết 10–12",time: "15:30–17:45" },
 ];
 
-const INITIAL_SCHEDULE = [
-  { id: "T001", day: 0, slot: 1, code: "CSC401-L01", name: "Hệ điều hành (L01)",     room: "B201", gv: "GS. Nguyễn Văn An", color: "#dbeafe", border: "#2563eb" },
-  { id: "T002", day: 0, slot: 3, code: "CSC380-L01", name: "Kiểm thử PM (L01)",       room: "Lab C2",gv: "TS. Hoàng Văn Đức", color: "#ede9fe", border: "#8b5cf6" },
-  { id: "T003", day: 1, slot: 2, code: "MTH302-L01", name: "XS Thống kê (L01)",       room: "A105", gv: "TS. Lê Thị Bình",   color: "#d1fae5", border: "#10b981" },
-  { id: "T004", day: 2, slot: 2, code: "CSC401-L02", name: "Hệ điều hành (L02)",     room: "B202", gv: "GS. Nguyễn Văn An", color: "#dbeafe", border: "#2563eb" },
-  { id: "T005", day: 3, slot: 3, code: "CSC420-L01", name: "Trí tuệ Nhân tạo (L01)",room: "B305", gv: "GS. Trần Minh Tú",  color: "#fef3c7", border: "#f59e0b" },
-  { id: "T006", day: 4, slot: 2, code: "ENG201-L01", name: "Tiếng Anh CN (L01)",     room: "D102", gv: "ThS. N.T. Dung",     color: "#d1fae5", border: "#10b981" },
-];
+// Color palette for schedules
+const COLORS = ["#dbeafe","#ede9fe","#d1fae5","#fef3c7"];
+const BORDERS = ["#2563eb","#8b5cf6","#10b981","#f59e0b"];
+
+// Calculate current week from today's date
+const getCurrentWeek = () => {
+  const semesterStart = new Date(2025, 8, 1); // Sept 1, 2025 (Week 1)
+  const today = new Date();
+  const daysElapsed = Math.floor((today - semesterStart) / (1000 * 60 * 60 * 24));
+  const week = Math.floor(daysElapsed / 7) + 1;
+  return Math.max(1, Math.min(week, 28)); // Clamp between 1-28
+};
 
 export function TimetableManager() {
-  const [schedule, setSchedule] = useState(INITIAL_SCHEDULE);
+  const [schedule, setSchedule] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm]         = useState({ day: 0, slot: 1, code: "", name: "", room: "", gv: "" });
+  const [form, setForm] = useState({ day: 0, slot: 1, code: "", name: "", room: "", gv: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [sectionId, setSectionId] = useState(null); // Section ID to manage schedules
+  const [week, setWeek] = useState(getCurrentWeek()); // Current week
   const { showToast } = useToast();
+
+  // Calculate dates dynamically based on week number
+  const DATES = (() => {
+    const semesterStart = new Date(2025, 8, 1); // Sept 1, 2025
+    const daysOffset = (week - 1) * 7;
+    const weekStart = new Date(semesterStart);
+    weekStart.setDate(weekStart.getDate() + daysOffset);
+    
+    const dates = [];
+    for (let i = 0; i < 6; i++) {
+      const date = new Date(weekStart);
+      date.setDate(date.getDate() + i);
+      dates.push(`${date.getDate()}/${date.getMonth() + 1}`);
+    }
+    return dates;
+  })();
+
+  // Load timetable data on mount
+  useEffect(() => {
+    loadTimetable();
+  }, []);
+
+  const loadTimetable = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await timetableService.getLecturerTimetable();
+      setSchedule(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setSchedule([]);
+      const message = err?.data?.message || err?.message || "Không thể tải thời khóa biểu.";
+      showToast("error", "Lỗi tải dữ liệu", message);
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
 
   function getCell(day, slot) {
     return schedule.find((s) => s.day === day && s.slot === slot);
@@ -36,26 +80,85 @@ export function TimetableManager() {
       showToast("error", "Xung đột thời khóa biểu!", `${DAYS[form.day]} ${SLOTS.find(s=>s.id===parseInt(form.slot))?.label} đã có lớp ${conflict.code}.`);
       return;
     }
-    const colors = ["#dbeafe","#ede9fe","#d1fae5","#fef3c7"];
-    const borders = ["#2563eb","#8b5cf6","#10b981","#f59e0b"];
-    const idx = schedule.length % 4;
-    setSchedule((prev) => [...prev, {
-      id: `T${Date.now()}`,
-      day: parseInt(form.day),
-      slot: parseInt(form.slot),
-      ...form,
-      color: colors[idx],
-      border: borders[idx],
-    }]);
-    showToast("success", "Đã thêm vào TKB!", `${form.code} · ${DAYS[form.day]}`);
-    setForm({ day: 0, slot: 1, code: "", name: "", room: "", gv: "" });
-    setShowForm(false);
+    
+    addScheduleToApi();
+  }
+
+  const addScheduleToApi = async () => {
+    try {
+      setSubmitting(true);
+      
+      // Validate sectionId is provided
+      if (!sectionId) {
+        showToast("warning", "Chưa nhập Section ID", "Vui lòng nhập Section ID trước khi thêm lịch học.");
+        setSubmitting(false);
+        return;
+      }
+
+      const scheduleData = {
+        day: parseInt(form.day),
+        slot: parseInt(form.slot),
+        code: form.code,
+        name: form.name,
+        room: form.room,
+        lecturer: form.gv,
+      };
+
+      // Call backend API to add schedule
+      const response = await timetableService.addCourseSectionSchedule(sectionId, scheduleData);
+      
+      // Add to local state with response data
+      const idx = schedule.length % 4;
+      const newEntry = {
+        id: response?.id || `T${Date.now()}`,
+        day: parseInt(form.day),
+        slot: parseInt(form.slot),
+        ...form,
+        color: COLORS[idx],
+        border: BORDERS[idx],
+      };
+      
+      setSchedule((prev) => [...prev, newEntry]);
+      showToast("success", "Đã thêm vào TKB!", `${form.code} · ${DAYS[form.day]}`);
+      setForm({ day: 0, slot: 1, code: "", name: "", room: "", gv: "" });
+      setShowForm(false);
+      setSectionId(null);
+    } catch (err) {
+      const message = err?.data?.message || err?.message || "Không thể thêm vào thời khóa biểu.";
+      showToast("error", "Lỗi thêm dữ liệu", message);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function removeEntry(id) {
     const e = schedule.find((s) => s.id === id);
-    setSchedule((prev) => prev.filter((s) => s.id !== id));
-    showToast("info", "Đã xóa khỏi TKB", e?.code);
+    removeScheduleFromApi(id, e);
+  }
+
+  const removeScheduleFromApi = async (id, entry) => {
+    try {
+      setSubmitting(true);
+      
+      // Call backend API to remove schedule
+      // Note: entry.id should be the scheduleId from backend
+      // You may need to fetch the sectionId that contains this schedule
+      // For now, we'll try with current sectionId or use entry's sectionId if available
+      const targetSectionId = entry?.sectionId || sectionId;
+      
+      if (targetSectionId) {
+        await timetableService.removeCourseSectionSchedule(targetSectionId, id);
+      }
+      
+      // Remove from local state
+      setSchedule((prev) => prev.filter((s) => s.id !== id));
+      showToast("info", "Đã xóa khỏi TKB", entry?.code);
+    } catch (err) {
+      const message = err?.data?.message || err?.message || "Không thể xóa khỏi thời khóa biểu.";
+      showToast("error", "Lỗi xóa dữ liệu", message);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -64,17 +167,35 @@ export function TimetableManager() {
         <div>
           <h1 style={{ color: "#1e293b" }}>Quản lý Thời khóa biểu</h1>
           <p style={{ color: "#64748b", fontSize: "0.875rem", marginTop: 2 }}>
-            Lập và điều chỉnh thời khóa biểu toàn trường — UC11
+            Học kỳ 2 — 2025/2026 · Tuần {week}/28
           </p>
         </div>
-        <button
-          onClick={() => setShowForm((v) => !v)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl"
-          style={{ backgroundColor: "#065f46", color: "white", border: "none", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600 }}
-        >
-          <Plus size={16} /> Thêm lịch học
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setWeek((w) => Math.max(1, w - 1))} disabled={loading} style={{ width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 10, border: "1px solid #e2e8f0", background: "#fff", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.5 : 1 }}>
+            <ChevronLeft size={16} color="#475569" />
+          </button>
+          <span style={{ fontWeight: 600, fontSize: "0.9rem", color: "#1e293b", padding: "0 8px" }}>
+            Tuần {week}: {DATES[0]} – {DATES[5]}/2026
+          </span>
+          <button onClick={() => setWeek((w) => Math.min(28, w + 1))} disabled={loading} style={{ width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 10, border: "1px solid #e2e8f0", background: "#fff", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.5 : 1 }}>
+            <ChevronRight size={16} color="#475569" />
+          </button>
+          <button
+            onClick={() => setShowForm((v) => !v)}
+            disabled={submitting || loading}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl"
+            style={{ backgroundColor: "#065f46", color: "white", border: "none", cursor: submitting || loading ? "not-allowed" : "pointer", fontSize: "0.85rem", fontWeight: 600, opacity: submitting || loading ? 0.6 : 1 }}
+          >
+            <Plus size={16} /> Thêm lịch học
+          </button>
+        </div>
       </div>
+
+      {loading && (
+        <div style={{ padding: "20px", textAlign: "center", color: "#64748b" }}>
+          Đang tải thời khóa biểu...
+        </div>
+      )}
 
       {showForm && (
         <div className="rounded-2xl p-6" style={{ backgroundColor: "#fff", border: "1px solid #e2e8f0" }}>
@@ -99,6 +220,17 @@ export function TimetableManager() {
               >
                 {SLOTS.map((s) => <option key={s.id} value={s.id}>{s.label} ({s.time})</option>)}
               </select>
+            </div>
+            <div>
+              <label style={{ fontSize: "0.78rem", fontWeight: 600, color: "#334155", display: "block", marginBottom: 5 }}>Section ID *</label>
+              <input
+                type="number"
+                value={sectionId || ""}
+                onChange={(e) => setSectionId(e.target.value ? parseInt(e.target.value) : null)}
+                placeholder="VD: 1"
+                required
+                style={{ width: "100%", padding: "8px 11px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: "0.85rem", outline: "none" }}
+              />
             </div>
             {[
               { key: "code", label: "Mã lớp HP",   placeholder: "VD: CSC501-L01" },
@@ -178,6 +310,21 @@ export function TimetableManager() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Summary Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: "Lớp HP", value: `${new Set(schedule.map(s => s.code || s.courseCode)).size}`, color: "#065f46" },
+          { label: "Buổi dạy", value: `${schedule.length}`, color: "#7c2d12" },
+          { label: "Phòng", value: `${new Set(schedule.map(s => s.room)).size}`, color: "#1e40af" },
+          { label: "Giảng viên", value: `${new Set(schedule.map(s => s.gv || s.lecturer)).size}`, color: "#7e22ce" },
+        ].map(({ label, value, color }) => (
+          <div key={label} className="rounded-xl px-4 py-3 text-center" style={{ backgroundColor: "#fff", border: "1px solid #e2e8f0" }}>
+            <p style={{ fontSize: "1.1rem", fontWeight: 700, color }}>{value}</p>
+            <p style={{ fontSize: "0.72rem", color: "#64748b" }}>{label}</p>
+          </div>
+        ))}
       </div>
 
       <div className="flex items-center gap-2 px-4 py-3 rounded-xl" style={{ backgroundColor: "#eff6ff", border: "1px solid #bfdbfe" }}>
