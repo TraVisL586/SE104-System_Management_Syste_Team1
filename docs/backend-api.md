@@ -543,6 +543,7 @@ Notes:
 - `status` is auto-calculated from `totalAmount` and `paidAmount`, except `WAIVED`.
 - `OWED` and `PARTIAL` block course registration for the same semester.
 - `PAID`, `WAIVED`, or missing tuition record allow course registration.
+- Course registration uses Redis lock per course section. Redis must be running for `POST /api/student/registrations`.
 
 Add payment body:
 
