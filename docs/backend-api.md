@@ -68,6 +68,8 @@ AcademicRequestType: LEAVE_OF_ABSENCE, GRADE_REVIEW, CREDIT_OVERLOAD, OTHER
 AcademicRequestStatus: PENDING, APPROVED, REJECTED
 TuitionStatus: PAID, OWED, PARTIAL, WAIVED
 AttendanceStatus: PRESENT, ABSENT, LATE, EXCUSED
+PaymentProvider: MOCK
+PaymentStatus: PENDING, SUCCESS, FAILED, CANCELLED
 ```
 
 ## Auth
@@ -586,6 +588,116 @@ Base role: `STUDENT`
 | --- | --- | --- |
 | `GET` | `/api/student/tuition-records` | Current student's tuition records |
 | `GET` | `/api/student/tuition-records/semesters/{semesterId}` | Current student's tuition record by semester |
+
+## Payment Integration
+
+Payment integration is currently a mock gateway flow for local/demo use.
+
+Flow:
+
+1. Student creates a pending payment transaction.
+2. Frontend receives `paymentUrl` and `transactionCode`.
+3. Demo gateway calls `/api/payments/mock-webhook`, or student calls the authenticated mock-confirm endpoint.
+4. If payment succeeds, backend marks the transaction `SUCCESS` and updates `tuition_records.paid_amount/status`.
+
+### Student Payments
+
+Base role: `STUDENT`
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `POST` | `/api/student/payments` | Create pending payment |
+| `GET` | `/api/student/payments` | List current student's payments |
+| `GET` | `/api/student/payments/{paymentId}` | Get current student's payment |
+| `POST` | `/api/student/payments/{paymentId}/mock-confirm` | Simulate payment result as current student |
+| `PATCH` | `/api/student/payments/{paymentId}/cancel` | Cancel pending payment |
+
+Create payment body:
+
+```json
+{
+  "tuitionRecordId": 1,
+  "amount": 5000000,
+  "provider": "MOCK"
+}
+```
+
+Rules:
+
+- Student can only pay their own tuition record.
+- `amount` must be greater than `0`.
+- `amount` cannot exceed outstanding tuition.
+- A tuition record can only have one `PENDING` payment at a time.
+- `PAID` and `WAIVED` tuition records cannot create new payments.
+
+Student mock-confirm body:
+
+```json
+{
+  "success": true,
+  "providerReference": "MOCK-REF-001",
+  "failureReason": null
+}
+```
+
+Payment response:
+
+```json
+{
+  "id": 1,
+  "transactionCode": "PAY-0f9e4e7a-9e56-4d2a-8f56-1a2b3c4d5e6f",
+  "tuitionRecordId": 1,
+  "studentId": 1,
+  "studentCode": "SV001",
+  "studentName": "Student One",
+  "semesterId": 1,
+  "semesterCode": "2026-HK1",
+  "semesterName": "Semester 1 2026",
+  "amount": 5000000,
+  "provider": "MOCK",
+  "status": "PENDING",
+  "paymentUrl": "/api/payments/mock-webhook",
+  "providerReference": null,
+  "failureReason": null,
+  "tuitionTotalAmount": 12000000,
+  "tuitionPaidAmount": 0,
+  "tuitionOutstandingAmount": 12000000,
+  "tuitionStatus": "OWED",
+  "createdAt": "2026-05-15T08:00:00",
+  "completedAt": null,
+  "updatedAt": "2026-05-15T08:00:00"
+}
+```
+
+### Mock Webhook
+
+Public demo endpoint.
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `POST` | `/api/payments/mock-webhook` | Simulate payment provider callback |
+
+Webhook body:
+
+```json
+{
+  "transactionCode": "PAY-0f9e4e7a-9e56-4d2a-8f56-1a2b3c4d5e6f",
+  "success": true,
+  "providerReference": "MOCK-GATEWAY-001",
+  "failureReason": null
+}
+```
+
+### Admin Payments
+
+Base role: `ADMIN`
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/api/admin/payments` | List all payment transactions |
+| `GET` | `/api/admin/payments/{paymentId}` | Get payment by id |
+| `GET` | `/api/admin/payments/students/{studentId}` | List payments by student |
+| `GET` | `/api/admin/payments/tuition-records/{tuitionRecordId}` | List payments by tuition record |
 
 ## Attendance And Notifications
 
