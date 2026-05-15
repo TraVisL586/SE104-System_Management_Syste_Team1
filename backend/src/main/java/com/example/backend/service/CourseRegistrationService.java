@@ -3,6 +3,7 @@ package com.example.backend.service;
 import com.example.backend.constant.CourseSectionStatus;
 import com.example.backend.constant.EnrollmentStatus;
 import com.example.backend.constant.StudentAcademicStatus;
+import com.example.backend.constant.TuitionStatus;
 import com.example.backend.dto.request.RegistrationRequest;
 import com.example.backend.dto.response.EnrollmentResponse;
 import com.example.backend.entity.CoursePrerequisite;
@@ -16,6 +17,7 @@ import com.example.backend.repository.CourseSectionRepository;
 import com.example.backend.repository.CourseSectionScheduleRepository;
 import com.example.backend.repository.EnrollmentRepository;
 import com.example.backend.repository.StudentRepository;
+import com.example.backend.repository.TuitionRecordRepository;
 import com.example.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -37,6 +39,7 @@ public class CourseRegistrationService {
     private final CourseSectionRepository courseSectionRepository;
     private final CourseSectionScheduleRepository scheduleRepository;
     private final CoursePrerequisiteRepository prerequisiteRepository;
+    private final TuitionRecordRepository tuitionRecordRepository;
 
     @Transactional
     public EnrollmentResponse register(String username, RegistrationRequest request) {
@@ -45,6 +48,7 @@ public class CourseRegistrationService {
 
         validateStudentCanRegister(student);
         validateSectionCanRegister(section);
+        validateTuitionStatus(student, section);
         validateNotAlreadyRegistered(student, section);
         validateCourseNotAlreadyRegisteredInSemester(student, section);
         validateCapacity(section);
@@ -136,6 +140,17 @@ public class CourseRegistrationService {
         if (section.getStatus() != CourseSectionStatus.OPEN) {
             throw new RuntimeException("Course section is not open for registration");
         }
+    }
+
+    private void validateTuitionStatus(Student student, CourseSection section) {
+        tuitionRecordRepository.findByStudentIdAndSemesterId(
+                student.getId(),
+                section.getSemester().getId()
+        ).ifPresent(record -> {
+            if (record.getStatus() == TuitionStatus.OWED || record.getStatus() == TuitionStatus.PARTIAL) {
+                throw new RuntimeException("Student has outstanding tuition for this semester");
+            }
+        });
     }
 
     private void validateNotAlreadyRegistered(Student student, CourseSection section) {
