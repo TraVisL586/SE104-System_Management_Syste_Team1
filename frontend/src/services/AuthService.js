@@ -1,7 +1,6 @@
 // Lightweight AuthService for logging in users.
 // Exports a single async `login(credentials)` which returns the parsed
-// response from the backend: { token, user }
-// The backend is expected to return JSON like: { token: '...', user: { id, name, role } }
+// response from the backend: { token, username, email, fullName, roles }
 
 import apiClient from './apiClient';
 
@@ -16,25 +15,25 @@ import apiClient from './apiClient';
 
 
 // ---------------------------------------------------------------------------
-// DEV MOCK — tắt khi backend sẵn sàng bằng cách đặt VITE_USE_MOCK=false
+// DEV MOCK — bật bằng cách đặt VITE_USE_MOCK=true
 // ---------------------------------------------------------------------------
-const USE_MOCK = true; // ← đổi thành false khi có backend thật
+const USE_MOCK = (import.meta.env.VITE_USE_MOCK || '').toLowerCase() === 'true';
 
 const MOCK_ACCOUNTS = [
-  { identifier: 'sv001@gmail.com',        password: '123456', token: 'mock-token-student',  user: { id: 1, name: 'Nguyễn Văn A',  role: 'STUDENT'        } },
-  { identifier: 'gv001@gmail.com',   password: '123456', token: 'mock-token-lecturer', user: { id: 2, name: 'Trần Thị B',    role: 'LECTURER'       } },
-  { identifier: 'admin1@gmail.com',password: '123456', token: 'mock-token-admin',    user: { id: 3, name: 'Lê Văn C',      role: 'ACADEMIC_ADMIN' } },
-  { identifier: 'admin2@gmail.com',password: '123456', token: 'mock-token-admin',    user: { id: 4, name: 'Lê Văn D',      role: 'IT_ADMIN' } },
+  { username: 'sv001@gmail.com',    password: '123456', token: 'mock-token-student',  user: { id: 1, name: 'Nguyễn Văn A',  role: 'STUDENT' } },
+  { username: 'gv001@gmail.com',    password: '123456', token: 'mock-token-lecturer', user: { id: 2, name: 'Trần Thị B',    role: 'LECTURER' } },
+  { username: 'admin1@gmail.com',   password: '123456', token: 'mock-token-admin',    user: { id: 3, name: 'Lê Văn C',      role: 'ADMIN' } },
+  { username: 'advisor1@gmail.com', password: '123456', token: 'mock-token-advisor',  user: { id: 4, name: 'Lê Văn D',      role: 'ACADEMIC_ADVISOR' } },
 ];
 
 function mockLogin(credentials) {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       const account = MOCK_ACCOUNTS.find(
-        (a) => a.identifier === credentials.identifier && a.password === credentials.password,
+        (a) => a.username === credentials.username && a.password === credentials.password,
       );
       if (account) {
-        resolve({ token: account.token, user: account.user });
+        resolve({ token: account.token, user: account.user, roles: [account.user.role], username: account.username, fullName: account.user.name });
       } else {
         reject(new Error('Sai tài khoản hoặc mật khẩu'));
       }
@@ -44,8 +43,12 @@ function mockLogin(credentials) {
 // ---------------------------------------------------------------------------
 
 export async function login(credentials) {
-  if (USE_MOCK) return mockLogin(credentials);
-  return apiClient.post('/api/auth/login', credentials);
+  const payload = {
+    username: credentials?.username || credentials?.identifier || credentials?.email || '',
+    password: credentials?.password || '',
+  };
+  if (USE_MOCK) return mockLogin(payload);
+  return apiClient.post('/api/auth/login', payload);
 }
 
 export default { login };

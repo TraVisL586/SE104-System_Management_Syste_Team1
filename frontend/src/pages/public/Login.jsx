@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { GraduationCap, Eye, EyeOff, Lock, Mail, AlertCircle } from "lucide-react";
 import { useRole } from "../../context/RoleContext.jsx";
+import { login as loginRequest } from "../../services/AuthService";
 
 const DEMO_ACCOUNTS = [
   {
@@ -40,7 +41,7 @@ export function Login() {
   const [showPw,   setShowPw]   = useState(false);
   const [error,    setError]    = useState("");
   const [loading,  setLoading]  = useState(false);
-  const { login } = useRole();
+  const { loginWithBackend } = useRole();
   const navigate  = useNavigate();
 
   function fillDemo(acc) {
@@ -49,39 +50,28 @@ export function Login() {
     setError("");
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setError("");
     setLoading(true);
+    const username = email.trim();
 
-    // 1. Chuẩn hóa dữ liệu nhập vào
-    const cleanEmail = email.trim().toLowerCase();
+    if (!username || !password) {
+      setError("Vui lòng nhập đầy đủ thông tin đăng nhập.");
+      setLoading(false);
+      return;
+    }
 
-    setTimeout(() => {
-      // 2. Tìm tài khoản
-      const found = DEMO_ACCOUNTS.find((a) => a.email.toLowerCase() === cleanEmail);
-
-      if (found && password === "Demo@123456") {
-        console.log("Tìm thấy user:", found.role);
-
-        // 3. Gọi hàm login từ Context
-        login(found.role);
-
-        //
-        console.log("Đã đăng nhập với role:", found.role);
-        // Nếu nó hiện 'student' là đúng, nếu hiện 'STUDENT' là bạn chưa sửa file Login hoặc RoleContext.
-        navigate("/");
-        //
-
-        // 4. CHỐT CHẶN: Dùng replace để không quay lại trang login khi nhấn Back
-        console.log("Đang chuyển trang...");
-        navigate("/", { replace: true });
-
-      } else {
-        setError("Email hoặc mật khẩu không đúng.");
-        setLoading(false);
-      }
-    }, 500); // Giảm thời gian chờ xuống cho mượt
+    try {
+      const response = await loginRequest({ username, password });
+      loginWithBackend(response);
+      navigate("/", { replace: true });
+    } catch (err) {
+      const message = err?.data?.message || err?.message || "Đăng nhập thất bại.";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
