@@ -66,6 +66,7 @@ GradeStatus: DRAFT, PUBLISHED
 GradeUnlockRequestStatus: PENDING, APPROVED, REJECTED
 AcademicRequestType: LEAVE_OF_ABSENCE, GRADE_REVIEW, CREDIT_OVERLOAD, OTHER
 AcademicRequestStatus: PENDING, APPROVED, REJECTED
+TuitionStatus: PAID, OWED, PARTIAL, WAIVED
 ```
 
 ## Auth
@@ -505,6 +506,84 @@ Base role: `ADMIN`
 | `GET` | `/api/admin/registrations` | List all enrollments |
 | `GET` | `/api/admin/registrations/sections/{sectionId}` | List enrollments by section |
 | `GET` | `/api/admin/registrations/students/{studentId}` | List enrollments by student |
+
+## Tuition Status
+
+### Admin
+
+Base role: `ADMIN`
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `POST` | `/api/admin/tuition-records` | Create tuition record |
+| `GET` | `/api/admin/tuition-records` | List tuition records |
+| `GET` | `/api/admin/tuition-records/{id}` | Get tuition record |
+| `GET` | `/api/admin/tuition-records/students/{studentId}` | List tuition records by student |
+| `GET` | `/api/admin/tuition-records/semesters/{semesterId}` | List tuition records by semester |
+| `PUT` | `/api/admin/tuition-records/{id}` | Update tuition record |
+| `PATCH` | `/api/admin/tuition-records/{id}/payments` | Add payment amount |
+| `DELETE` | `/api/admin/tuition-records/{id}` | Delete tuition record |
+
+Create or update body:
+
+```json
+{
+  "studentId": 1,
+  "semesterId": 1,
+  "totalAmount": 12000000,
+  "paidAmount": 0,
+  "status": "OWED",
+  "dueDate": "2026-09-30",
+  "note": "Semester tuition"
+}
+```
+
+Notes:
+
+- `status` is auto-calculated from `totalAmount` and `paidAmount`, except `WAIVED`.
+- `OWED` and `PARTIAL` block course registration for the same semester.
+- `PAID`, `WAIVED`, or missing tuition record allow course registration.
+
+Add payment body:
+
+```json
+{
+  "amount": 12000000,
+  "note": "Paid by bank transfer"
+}
+```
+
+Tuition response:
+
+```json
+{
+  "id": 1,
+  "studentId": 1,
+  "studentCode": "SV001",
+  "studentName": "Student One",
+  "studentEmail": "student01@example.com",
+  "semesterId": 1,
+  "semesterCode": "2026-HK1",
+  "semesterName": "Semester 1 2026",
+  "totalAmount": 12000000,
+  "paidAmount": 0,
+  "outstandingAmount": 12000000,
+  "status": "OWED",
+  "dueDate": "2026-09-30",
+  "note": "Semester tuition",
+  "createdAt": "2026-05-15T08:00:00",
+  "updatedAt": "2026-05-15T08:00:00"
+}
+```
+
+### Student
+
+Base role: `STUDENT`
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/api/student/tuition-records` | Current student's tuition records |
+| `GET` | `/api/student/tuition-records/semesters/{semesterId}` | Current student's tuition record by semester |
 
 ## Timetable And Roster
 
