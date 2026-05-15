@@ -745,6 +745,89 @@ Base role: `ADMIN`
 | --- | --- | --- |
 | `GET` | `/api/admin/course-sections/{sectionId}/announcements` | List announcements by section |
 
+## Reports And Export
+
+Base role: `ADMIN`
+
+Reports return JSON for dashboards. Export endpoints return `text/csv` with `Content-Disposition: attachment`.
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/api/admin/reports/class-fill-rates` | Course section fill-rate report |
+| `GET` | `/api/admin/reports/class-fill-rates/export` | Export fill-rate report as CSV |
+| `GET` | `/api/admin/reports/grade-progress` | Grade entry/publish progress by course section |
+| `GET` | `/api/admin/reports/grade-progress/export` | Export grade progress report as CSV |
+| `GET` | `/api/admin/reports/student-status-summary` | Count students by academic status |
+| `GET` | `/api/admin/reports/student-status-summary/export` | Export student status summary as CSV |
+| `GET` | `/api/admin/reports/tuition-summary` | Tuition summary grouped by tuition status |
+| `GET` | `/api/admin/reports/tuition-summary/export` | Export tuition summary as CSV |
+| `GET` | `/api/admin/reports/grade-status-summary` | Count grade records by grade status |
+
+Optional query params:
+
+| Endpoint group | Param | Example |
+| --- | --- | --- |
+| class fill rates | `semesterId` | `/api/admin/reports/class-fill-rates?semesterId=1` |
+| grade progress | `semesterId` | `/api/admin/reports/grade-progress?semesterId=1` |
+| tuition summary | `semesterId` | `/api/admin/reports/tuition-summary?semesterId=1` |
+
+Class fill-rate response:
+
+```json
+{
+  "courseSectionId": 1,
+  "courseSectionCode": "SE101-01",
+  "courseId": 1,
+  "courseCode": "SE101",
+  "courseName": "Introduction to Software Engineering",
+  "lecturerId": 1,
+  "lecturerCode": "GV001",
+  "lecturerName": "Lecturer One",
+  "semesterId": 1,
+  "semesterCode": "2026-HK1",
+  "semesterName": "Semester 1 2026",
+  "capacity": 60,
+  "enrolledCount": 30,
+  "availableSeats": 30,
+  "fillRatePercent": 50.00
+}
+```
+
+Grade progress response:
+
+```json
+{
+  "courseSectionId": 1,
+  "courseSectionCode": "SE101-01",
+  "courseId": 1,
+  "courseCode": "SE101",
+  "courseName": "Introduction to Software Engineering",
+  "lecturerId": 1,
+  "lecturerCode": "GV001",
+  "lecturerName": "Lecturer One",
+  "semesterId": 1,
+  "semesterCode": "2026-HK1",
+  "semesterName": "Semester 1 2026",
+  "totalStudents": 30,
+  "draftGrades": 10,
+  "publishedGrades": 15,
+  "missingGrades": 5,
+  "publishRatePercent": 50.00
+}
+```
+
+Tuition summary response:
+
+```json
+{
+  "status": "OWED",
+  "recordCount": 10,
+  "totalAmount": 120000000,
+  "paidAmount": 20000000,
+  "outstandingAmount": 100000000
+}
+```
+
 ## Timetable And Roster
 
 ### Student
