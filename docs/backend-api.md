@@ -67,6 +67,7 @@ GradeUnlockRequestStatus: PENDING, APPROVED, REJECTED
 AcademicRequestType: LEAVE_OF_ABSENCE, GRADE_REVIEW, CREDIT_OVERLOAD, OTHER
 AcademicRequestStatus: PENDING, APPROVED, REJECTED
 TuitionStatus: PAID, OWED, PARTIAL, WAIVED
+AttendanceStatus: PRESENT, ABSENT, LATE, EXCUSED
 ```
 
 ## Auth
@@ -584,6 +585,164 @@ Base role: `STUDENT`
 | --- | --- | --- |
 | `GET` | `/api/student/tuition-records` | Current student's tuition records |
 | `GET` | `/api/student/tuition-records/semesters/{semesterId}` | Current student's tuition record by semester |
+
+## Attendance And Notifications
+
+### Lecturer - Attendance
+
+Base role: `LECTURER`
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `PUT` | `/api/lecturer/course-sections/{sectionId}/attendance` | Record or update attendance for a class date |
+| `GET` | `/api/lecturer/course-sections/{sectionId}/attendance?date=2026-09-01` | View attendance for a class date |
+
+Attendance body:
+
+```json
+{
+  "attendanceDate": "2026-09-01",
+  "records": [
+    {
+      "studentId": 1,
+      "status": "PRESENT",
+      "note": "On time"
+    },
+    {
+      "studentId": 2,
+      "status": "ABSENT",
+      "note": "No notice"
+    }
+  ]
+}
+```
+
+Notes:
+
+- Lecturer can only record attendance for course sections they teach.
+- `studentId` must belong to an `ENROLLED` student in that course section.
+- Calling `PUT` again for the same `sectionId`, `studentId`, and `attendanceDate` updates the existing record.
+
+Attendance session response:
+
+```json
+{
+  "courseSectionId": 1,
+  "courseSectionCode": "SE101-01",
+  "courseId": 1,
+  "courseCode": "SE101",
+  "courseName": "Introduction to Software Engineering",
+  "lecturerId": 1,
+  "lecturerCode": "GV001",
+  "lecturerName": "Lecturer One",
+  "semesterId": 1,
+  "semesterCode": "2026-HK1",
+  "semesterName": "Semester 1 2026",
+  "attendanceDate": "2026-09-01",
+  "totalStudents": 2,
+  "presentCount": 1,
+  "absentCount": 1,
+  "lateCount": 0,
+  "excusedCount": 0,
+  "records": []
+}
+```
+
+### Student - Attendance
+
+Base role: `STUDENT`
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/api/student/attendance` | Current student's attendance records |
+| `GET` | `/api/student/attendance?courseSectionId=1` | Current student's attendance records by section |
+
+### Admin - Attendance
+
+Base role: `ADMIN`
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/api/admin/course-sections/{sectionId}/attendance?date=2026-09-01` | View section attendance by date |
+
+### Lecturer - Announcements
+
+Base role: `LECTURER`
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `POST` | `/api/lecturer/course-sections/{sectionId}/announcements` | Send class announcement to enrolled students |
+| `GET` | `/api/lecturer/course-sections/{sectionId}/announcements` | List announcements for taught section |
+
+Announcement body:
+
+```json
+{
+  "title": "Midterm reminder",
+  "content": "Midterm exam starts at 07:30 in room A101."
+}
+```
+
+Announcement response:
+
+```json
+{
+  "id": 1,
+  "courseSectionId": 1,
+  "courseSectionCode": "SE101-01",
+  "courseId": 1,
+  "courseCode": "SE101",
+  "courseName": "Introduction to Software Engineering",
+  "lecturerId": 1,
+  "lecturerCode": "GV001",
+  "lecturerName": "Lecturer One",
+  "title": "Midterm reminder",
+  "content": "Midterm exam starts at 07:30 in room A101.",
+  "recipientCount": 2,
+  "createdAt": "2026-05-15T08:00:00"
+}
+```
+
+### Student - Notifications
+
+Base role: `STUDENT`
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/api/student/notifications` | Current student's notifications |
+| `GET` | `/api/student/notifications?isRead=false` | Filter unread/read notifications |
+| `PATCH` | `/api/student/notifications/{notificationId}/read` | Mark one notification as read |
+| `PATCH` | `/api/student/notifications/read-all` | Mark all notifications as read |
+
+Notification response:
+
+```json
+{
+  "id": 1,
+  "announcementId": 1,
+  "courseSectionId": 1,
+  "courseSectionCode": "SE101-01",
+  "courseId": 1,
+  "courseCode": "SE101",
+  "courseName": "Introduction to Software Engineering",
+  "lecturerId": 1,
+  "lecturerCode": "GV001",
+  "lecturerName": "Lecturer One",
+  "title": "Midterm reminder",
+  "content": "Midterm exam starts at 07:30 in room A101.",
+  "isRead": false,
+  "readAt": null,
+  "createdAt": "2026-05-15T08:00:00"
+}
+```
+
+### Admin - Announcements
+
+Base role: `ADMIN`
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/api/admin/course-sections/{sectionId}/announcements` | List announcements by section |
 
 ## Timetable And Roster
 
