@@ -1,80 +1,198 @@
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Search, BookOpen, Plus, Trash2, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useToast } from "../../context/ToastContext";
+import courseRegistrationService from "../../services/courseRegistrationService";
 
 const MAX_TC = 24;
-
-const CATALOG = [
-  { code: "CSC501", name: "Học máy",                tc: 3, gv: "GS. Trần Minh Tú",     khoa: "CNTT",  slots: 35, enrolled: 28, prereq: "CSC401" },
-  { code: "CSC502", name: "Lập trình Di động",      tc: 3, gv: "TS. Lê Văn Hải",        khoa: "CNTT",  slots: 40, enrolled: 40, prereq: "CSC312" },
-  { code: "CSC503", name: "Điện toán Đám mây",      tc: 3, gv: "PGS. Phạm Ngọc Anh",   khoa: "CNTT",  slots: 30, enrolled: 22, prereq: null },
-  { code: "MTH401", name: "Phương trình Vi phân",   tc: 3, gv: "TS. Nguyễn Thu Hà",     khoa: "Toán",  slots: 50, enrolled: 37, prereq: "MTH302" },
-  { code: "ENG301", name: "Tiếng Anh Học thuật",    tc: 2, gv: "ThS. Đinh Thị Lan",     khoa: "Ngoại ngữ", slots: 45, enrolled: 31, prereq: null },
-  { code: "CSC480", name: "Bảo mật Hệ thống",       tc: 3, gv: "TS. Hoàng Văn Đức",    khoa: "CNTT",  slots: 35, enrolled: 29, prereq: "CSC312" },
-  { code: "CSC490", name: "Đồ án Tốt nghiệp I",     tc: 3, gv: "GS. Nguyễn Văn An",    khoa: "CNTT",  slots: 20, enrolled: 18, prereq: "CSC420" },
-  { code: "BUS201", name: "Quản trị Doanh nghiệp",  tc: 2, gv: "ThS. Trần Thị Mai",     khoa: "Kinh tế", slots: 60, enrolled: 44, prereq: null },
-];
-
-const ALREADY_ENROLLED = ["CSC401", "MTH302", "CSC312", "ENG201", "CSC420", "CSC380"];
+const CURRENT_SEMESTER_ID = 2;
+const SEARCH_DEBOUNCE_MS = 400;
+const ACTIVE_STATUSES = new Set(["ENROLLED", "WAITLISTED"]);
 
 export function Registrations() {
-  const [search, setSearch]       = useState("");
-  const [cart,   setCart]         = useState([]);
-  const [khoa,   setKhoa]         = useState("Tất cả");
-  const { showToast }             = useToast();
+  const [search, setSearch] = useState("");
+  const [cart, setCart] = useState([]);
+  const [khoa, setKhoa] = useState("Tất cả");
+  const [openSections, setOpenSections] = useState([]);
+  const [registrations, setRegistrations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingSections, setLoadingSections] = useState(false);
+  const [sectionError, setSectionError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const { showToast } = useToast();
+  const initializedRef = useRef(false);
 
-  const enrolledTC = 17; // current semester
-  const cartTC     = cart.reduce((s, c) => s + c.tc, 0);
-  const totalTC    = enrolledTC + cartTC;
+  const KHOAS = ["Tất cả"];
 
-  const KHOAS = ["Tất cả", "CNTT", "Toán", "Ngoại ngữ", "Kinh tế"];
+  const cartTC = useMemo(() => cart.reduce((s, c) => s + (c.credits || 0), 0), [cart]);
 
-  const filtered = CATALOG.filter((c) => {
-    const matchS = c.name.toLowerCase().includes(search.toLowerCase()) || c.code.toLowerCase().includes(search.toLowerCase());
-    const matchK = khoa === "Tất cả" || c.khoa === khoa;
-    return matchS && matchK;
-  });
+  const activeRegistrations = useMemo(
+    () => registrations.filter((r) => ACTIVE_STATUSES.has(r.status)),
+    [registrations],
+  );
 
-  function addToCart(course) {
-    if (ALREADY_ENROLLED.includes(course.code)) {
-      showToast("warning", "Đã đăng ký", `Bạn đã đăng ký môn ${course.name} rồi.`);
+  const enrolledTC = useMemo(
+    () =>
+      activeRegistrations
+        .filter((r) => r.semesterId === CURRENT_SEMESTER_ID)
+        .reduce((s, r) => s + (r.credits || 0), 0),
+    [activeRegistrations],
+  );
+
+  const totalTC = enrolledTC + cartTC;
+
+  const registeredCourseIds = useMemo(
+    () => new Set(activeRegistrations.map((r) => r.courseId)),
+    [activeRegistrations],
+  );
+
+  const registeredSectionIds = useMemo(
+    () => new Set(activeRegistrations.map((r) => r.courseSectionId)),
+    [activeRegistrations],
+  );
+
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return openSections.filter((section) => {
+      const matchesKeyword =
+        !term ||
+        section.courseName?.toLowerCase().includes(term) ||
+        section.courseCode?.toLowerCase().includes(term) ||
+        section.code?.toLowerCase().includes(term);
+      const matchesKhoa = khoa === "Tất cả";
+      return matchesKeyword && matchesKhoa;
+    });
+  }, [openSections, search, khoa]);
+
+  const semesterLabel = useMemo(() => {
+    const found = openSections.find((s) => s.semesterId === CURRENT_SEMESTER_ID);
+    if (found?.semesterName && found?.semesterCode) return `${found.semesterName} — ${found.semesterCode}`;
+    if (found?.semesterName) return found.semesterName;
+    if (found?.semesterCode) return found.semesterCode;
+    return `Học kỳ ${CURRENT_SEMESTER_ID}`;
+  }, [openSections]);
+
+  const loadRegistrations = useCallback(async () => {
+    try {
+      const data = await courseRegistrationService.getMyRegistrations();
+      setRegistrations(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setRegistrations([]);
+      const message = err?.data?.message || err?.message || "Không thể tải danh sách đăng ký.";
+      showToast("error", "Không thể tải đăng ký", message);
+    }
+  }, [showToast]);
+
+  const loadSections = useCallback(async (keyword = "") => {
+    setLoadingSections(true);
+    setSectionError("");
+    try {
+      const data = await courseRegistrationService.getOpenSections({
+        semesterId: CURRENT_SEMESTER_ID,
+        keyword: keyword.trim() || undefined,
+      });
+      setOpenSections(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setOpenSections([]);
+      const message = err?.data?.message || err?.message || "Không thể tải lớp học phần.";
+      setSectionError(message);
+    } finally {
+      setLoadingSections(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const init = async () => {
+      setLoading(true);
+      await Promise.all([loadRegistrations(), loadSections("")]);
+      if (active) setLoading(false);
+    };
+    init();
+    return () => {
+      active = false;
+    };
+  }, [loadRegistrations, loadSections]);
+
+  useEffect(() => {
+    if (!initializedRef.current) {
+      initializedRef.current = true;
       return;
     }
-    if (cart.find((c) => c.code === course.code)) {
-      showToast("warning", "Đã chọn", `${course.name} đã được chọn trước đó.`);
-      return;
-    }
-    if (totalTC + course.tc > MAX_TC) {
-      showToast("error", "Vượt giới hạn tín chỉ (BR-2)", `Đăng ký thêm ${course.tc} TC sẽ vượt mức tối đa ${MAX_TC} TC trong học kỳ.`);
-      return;
-    }
-    if (course.enrolled >= course.slots) {
-      showToast("error", "Lớp đã đầy", `${course.name} không còn chỗ trống.`);
-      return;
-    }
-    setCart((prev) => [...prev, course]);
-    showToast("success", "Đã thêm môn học", `${course.name} (${course.tc} TC)`);
+    const handle = setTimeout(() => {
+      loadSections(search);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(handle);
+  }, [search, loadSections]);
+
+  function getAvailableSeats(section) {
+    if (Number.isFinite(section.availableSeats)) return section.availableSeats;
+    const capacity = section.capacity || 0;
+    const enrolled = section.enrolledCount || 0;
+    return Math.max(0, capacity - enrolled);
   }
 
-  function removeFromCart(code) {
-    setCart((prev) => prev.filter((c) => c.code !== code));
+  function addToCart(section) {
+    if (registeredCourseIds.has(section.courseId) || registeredSectionIds.has(section.id)) {
+      showToast("warning", "Đã đăng ký", `Bạn đã đăng ký môn ${section.courseName} rồi.`);
+      return;
+    }
+    if (cart.some((c) => c.courseId === section.courseId)) {
+      showToast("warning", "Đã chọn", `${section.courseName} đã được chọn trước đó.`);
+      return;
+    }
+    if (totalTC + (section.credits || 0) > MAX_TC) {
+      showToast(
+        "error",
+        "Vượt giới hạn tín chỉ (BR-2)",
+        `Đăng ký thêm ${section.credits || 0} TC sẽ vượt mức tối đa ${MAX_TC} TC trong học kỳ.`,
+      );
+      return;
+    }
+    if (getAvailableSeats(section) <= 0) {
+      showToast("error", "Lớp đã đầy", `${section.courseName} không còn chỗ trống.`);
+      return;
+    }
+    setCart((prev) => [...prev, section]);
+    showToast("success", "Đã thêm môn học", `${section.courseName} (${section.credits || 0} TC)`);
   }
 
-  function submitRegistration() {
+  function removeFromCart(sectionId) {
+    setCart((prev) => prev.filter((c) => c.id !== sectionId));
+  }
+
+  async function submitRegistration() {
     if (cart.length === 0) {
-      showToast("warning", "Danh mục đăng  trống", "Vui lòng chọn ít nhất một môn học.");
+      showToast("warning", "Danh mục đăng ký trống", "Vui lòng chọn ít nhất một môn học.");
       return;
     }
+
+    setSubmitting(true);
+    for (const section of cart) {
+      try {
+        await courseRegistrationService.registerSection(section.id);
+      } catch (err) {
+        const message = err?.data?.message || err?.message || "Đăng ký thất bại.";
+        showToast("error", "Đăng ký thất bại", `${section.courseName}: ${message}`);
+        await Promise.all([loadRegistrations(), loadSections(search)]);
+        setSubmitting(false);
+        return;
+      }
+    }
+
     showToast("success", "Đăng ký thành công!", `Đã đăng ký ${cart.length} môn học (${cartTC} TC).`);
     setCart([]);
+    await Promise.all([loadRegistrations(), loadSections(search)]);
+    setSubmitting(false);
   }
+
+  const showLoading = loading || loadingSections;
 
   return (
     <div className="space-y-5">
       <div>
         <h1 style={{ color: "#1e293b" }}>Đăng ký Môn học</h1>
         <p style={{ color: "#64748b", fontSize: "0.875rem", marginTop: 2 }}>
-          Học kỳ 2 — 2025/2026 · Đã đăng ký: {enrolledTC} TC · Tối đa: {MAX_TC} TC (BR-2)
+          {semesterLabel} · Đã đăng ký: {enrolledTC} TC · Tối đa: {MAX_TC} TC (BR-2)
         </p>
       </div>
 
@@ -131,6 +249,9 @@ export function Registrations() {
                 </button>
               ))}
             </div>
+            {loadingSections && (
+              <span style={{ fontSize: "0.72rem", color: "#94a3b8", alignSelf: "center" }}>Đang tải...</span>
+            )}
           </div>
 
           <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid #e2e8f0" }}>
@@ -143,39 +264,73 @@ export function Registrations() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((c) => {
-                  const isEnrolled = ALREADY_ENROLLED.includes(c.code);
-                  const inCart     = cart.find((x) => x.code === c.code);
-                  const full       = c.enrolled >= c.slots;
+                {sectionError && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-6 text-center" style={{ fontSize: "0.8rem", color: "#ef4444" }}>
+                      {sectionError}
+                      <div style={{ marginTop: 8 }}>
+                        <button
+                          onClick={() => loadSections(search)}
+                          style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer", fontSize: "0.75rem" }}
+                        >
+                          Thử lại
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                {!sectionError && showLoading && filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-6 text-center" style={{ fontSize: "0.8rem", color: "#94a3b8" }}>
+                      Đang tải dữ liệu...
+                    </td>
+                  </tr>
+                )}
+                {!sectionError && !showLoading && filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-6 text-center" style={{ fontSize: "0.8rem", color: "#94a3b8" }}>
+                      Không có lớp học phần đang mở.
+                    </td>
+                  </tr>
+                )}
+                {filtered.map((section) => {
+                  const isEnrolled = registeredCourseIds.has(section.courseId) || registeredSectionIds.has(section.id);
+                  const inCartCourse = cart.some((x) => x.courseId === section.courseId);
+                  const seatsLeft = getAvailableSeats(section);
+                  const full = seatsLeft <= 0;
                   return (
-                    <tr key={c.code} style={{ borderTop: "1px solid #f1f5f9", opacity: isEnrolled ? 0.5 : 1 }}>
-                      <td className="px-4 py-3" style={{ fontFamily: "monospace", fontSize: "0.75rem", color: "#2563eb", fontWeight: 600 }}>{c.code}</td>
-                      <td className="px-4 py-3">
-                        <p style={{ fontSize: "0.82rem", color: "#1e293b", fontWeight: 500 }}>{c.name}</p>
-                        {c.prereq && <p style={{ fontSize: "0.68rem", color: "#94a3b8" }}>Tiên quyết: {c.prereq}</p>}
+                    <tr key={section.id} style={{ borderTop: "1px solid #f1f5f9", opacity: isEnrolled ? 0.5 : 1 }}>
+                      <td className="px-4 py-3" style={{ fontFamily: "monospace", fontSize: "0.75rem", color: "#2563eb", fontWeight: 600 }}>
+                        {section.courseCode || section.code}
                       </td>
-                      <td className="px-4 py-3" style={{ fontSize: "0.78rem", color: "#475569" }}>{c.tc}</td>
-                      <td className="px-4 py-3" style={{ fontSize: "0.75rem", color: "#64748b" }}>{c.gv}</td>
+                      <td className="px-4 py-3">
+                        <p style={{ fontSize: "0.82rem", color: "#1e293b", fontWeight: 500 }}>{section.courseName}</p>
+                        {section.code && (
+                          <p style={{ fontSize: "0.68rem", color: "#94a3b8" }}>Lớp: {section.code}</p>
+                        )}
+                      </td>
+                      <td className="px-4 py-3" style={{ fontSize: "0.78rem", color: "#475569" }}>{section.credits}</td>
+                      <td className="px-4 py-3" style={{ fontSize: "0.75rem", color: "#64748b" }}>{section.lecturerName || "Chưa có"}</td>
                       <td className="px-4 py-3">
                         <span style={{ fontSize: "0.72rem", color: full ? "#ef4444" : "#10b981", fontWeight: 600 }}>
-                          {full ? "Hết chỗ" : `${c.slots - c.enrolled} chỗ`}
+                          {full ? "Hết chỗ" : `${seatsLeft} chỗ`}
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         {isEnrolled ? (
-                          <span style={{ fontSize: "0.7rem", color: "#10b981", fontWeight: 600 }}>✓ Đã học</span>
-                        ) : inCart ? (
+                          <span style={{ fontSize: "0.7rem", color: "#10b981", fontWeight: 600 }}>✓ Đã đăng ký</span>
+                        ) : inCartCourse ? (
                           <span style={{ fontSize: "0.7rem", color: "#8b5cf6", fontWeight: 600 }}>✓ Trong giỏ</span>
                         ) : (
                           <button
-                            onClick={() => addToCart(c)}
-                            disabled={full}
+                            onClick={() => addToCart(section)}
+                            disabled={full || submitting}
                             style={{
                               display: "flex", alignItems: "center", gap: 4,
                               padding: "4px 10px", borderRadius: 8,
-                              backgroundColor: full ? "#f1f5f9" : "#dbeafe",
-                              color: full ? "#94a3b8" : "#2563eb",
-                              border: "none", cursor: full ? "not-allowed" : "pointer",
+                              backgroundColor: full || submitting ? "#f1f5f9" : "#dbeafe",
+                              color: full || submitting ? "#94a3b8" : "#2563eb",
+                              border: "none", cursor: full || submitting ? "not-allowed" : "pointer",
                               fontSize: "0.75rem", fontWeight: 600,
                             }}
                           >
@@ -205,12 +360,12 @@ export function Registrations() {
           ) : (
             <div>
               {cart.map((c) => (
-                <div key={c.code} className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid #f1f5f9" }}>
+                <div key={c.id} className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid #f1f5f9" }}>
                   <div>
-                    <p style={{ fontSize: "0.8rem", fontWeight: 600, color: "#1e293b" }}>{c.name}</p>
-                    <p style={{ fontSize: "0.7rem", color: "#64748b" }}>{c.code} · {c.tc} TC</p>
+                    <p style={{ fontSize: "0.8rem", fontWeight: 600, color: "#1e293b" }}>{c.courseName}</p>
+                    <p style={{ fontSize: "0.7rem", color: "#64748b" }}>{c.courseCode || c.code} · {c.credits} TC</p>
                   </div>
-                  <button onClick={() => removeFromCart(c.code)} style={{ background: "none", border: "none", cursor: "pointer" }}>
+                  <button onClick={() => removeFromCart(c.id)} style={{ background: "none", border: "none", cursor: "pointer" }}>
                     <Trash2 size={14} color="#ef4444" />
                   </button>
                 </div>
@@ -224,17 +379,17 @@ export function Registrations() {
                 )}
                 <button
                   onClick={submitRegistration}
-                  disabled={totalTC > MAX_TC}
+                  disabled={totalTC > MAX_TC || submitting || cart.length === 0}
                   className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl"
                   style={{
-                    backgroundColor: totalTC > MAX_TC ? "#e2e8f0" : "#1a3461",
-                    color: totalTC > MAX_TC ? "#94a3b8" : "white",
-                    border: "none", cursor: totalTC > MAX_TC ? "not-allowed" : "pointer",
+                    backgroundColor: totalTC > MAX_TC || submitting || cart.length === 0 ? "#e2e8f0" : "#1a3461",
+                    color: totalTC > MAX_TC || submitting || cart.length === 0 ? "#94a3b8" : "white",
+                    border: "none", cursor: totalTC > MAX_TC || submitting || cart.length === 0 ? "not-allowed" : "pointer",
                     fontSize: "0.85rem", fontWeight: 600,
                   }}
                 >
                   <CheckCircle2 size={16} />
-                  Xác nhận Đăng ký
+                  {submitting ? "Đang đăng ký..." : "Xác nhận Đăng ký"}
                 </button>
               </div>
             </div>

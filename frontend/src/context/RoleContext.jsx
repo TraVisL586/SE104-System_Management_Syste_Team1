@@ -62,6 +62,22 @@ export const ROLE_COLORS = {
   PUBLIC: { bg: "#334155", color: "#64748b", light: "#f1f5f9" },
 };
 
+const ROLE_PRIORITY = ["ADMIN", "ACADEMIC_ADVISOR", "LECTURER", "STUDENT"];
+
+function pickRole(roles = []) {
+  for (const role of ROLE_PRIORITY) {
+    if (roles.includes(role)) return role;
+  }
+  return roles[0] || "PUBLIC";
+}
+
+function getInitials(name) {
+  if (!name) return "?";
+  const parts = String(name).trim().split(/\s+/);
+  const initials = parts.slice(0, 2).map((p) => p[0]).join("");
+  return initials.toUpperCase() || "?";
+}
+
 // Khởi tạo Context
 const RoleContext = createContext(null);
 
@@ -72,8 +88,7 @@ export function RoleProvider({ children }) {
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
-  const login = (roleInput) => {
-
+  const loginDemo = (roleInput) => {
     const role = roleInput?.toUpperCase();
 
     if (DEMO_USERS[role]) {
@@ -84,6 +99,28 @@ export function RoleProvider({ children }) {
       localStorage.setItem('sms_access_token', 'demo-token-123');
     } else {
       console.error(`Role "${roleInput}" không tồn tại.`);
+    }
+  };
+
+  const loginWithBackend = (loginResponse) => {
+    if (!loginResponse) return;
+    const role = pickRole(loginResponse.roles || []);
+    const name = loginResponse.fullName || loginResponse.username || loginResponse.email || "User";
+
+    const userData = {
+      name,
+      id: loginResponse.username || loginResponse.email || "unknown",
+      role,
+      email: loginResponse.email || "",
+      department: "",
+      avatarInitials: getInitials(name),
+      roles: loginResponse.roles || [],
+    };
+
+    setUser(userData);
+    localStorage.setItem('sms_user', JSON.stringify(userData));
+    if (loginResponse.token) {
+      localStorage.setItem('sms_access_token', loginResponse.token);
     }
   };
 
@@ -99,7 +136,9 @@ export function RoleProvider({ children }) {
     user,
     isAuthenticated: !!user,
     role: user?.role || "PUBLIC",
-    login,
+    login: loginDemo,
+    loginDemo,
+    loginWithBackend,
     logout,
   };
 

@@ -55,4 +55,25 @@ export async function get(path, opts = {}) {
   return data;
 }
 
-export default { post, get };
+export async function del(path, opts = {}) {
+  const res = await fetch(buildUrl(path), {
+    method: 'DELETE',
+    headers: {
+      ...getAuthHeader(),
+      ...(opts.headers || {}),
+    },
+    ...opts.fetchOptions,
+  });
+
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    const err = new Error((data && data.message) || 'Request failed');
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
+
+  return data;
+}
+
+export default { post, get, del };

@@ -51,7 +51,8 @@ export function TopNav({ onMenuToggle }) {
   const notifRef   = useRef(null);
   const profileRef = useRef(null);
   const navigate   = useNavigate();
-  const { user, login, logout } = useRole();
+  const { user, loginDemo, logout } = useRole();
+  const USE_MOCK = (import.meta.env.VITE_USE_MOCK || '').toLowerCase() === 'true';
 
   const role = user?.role || "PUBLIC";
   const roleColor = ROLE_COLORS[role.toUpperCase()] || ROLE_COLORS.PUBLIC;
@@ -70,7 +71,7 @@ export function TopNav({ onMenuToggle }) {
   }, []);
 
   function switchRole(r) {
-    login(r);
+    loginDemo(r);
     setSwitchOpen(false);
     setProfileOpen(false);
     navigate("/");
@@ -116,6 +117,7 @@ export function TopNav({ onMenuToggle }) {
 
       <div className="flex items-center gap-2 ml-auto">
         {/* Demo Role Switcher */}
+        {USE_MOCK && (
         <div style={{ position: "relative" }}>
           <button
             onClick={() => { setSwitchOpen((v) => !v); setNotifOpen(false); setProfileOpen(false); }}
@@ -173,6 +175,7 @@ export function TopNav({ onMenuToggle }) {
             </div>
           )}
         </div>
+        )}
 
         {/* Notifications */}
         <div ref={notifRef} style={{ position: "relative" }}>
