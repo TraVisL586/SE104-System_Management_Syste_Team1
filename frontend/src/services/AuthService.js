@@ -20,10 +20,10 @@ import apiClient from './apiClient';
 const USE_MOCK = (import.meta.env.VITE_USE_MOCK || '').toLowerCase() === 'true';
 
 const MOCK_ACCOUNTS = [
-  { username: 'sv001@gmail.com',    password: '123456', token: 'mock-token-student',  user: { id: 1, name: 'Nguyễn Văn A',  role: 'STUDENT' } },
-  { username: 'gv001@gmail.com',    password: '123456', token: 'mock-token-lecturer', user: { id: 2, name: 'Trần Thị B',    role: 'LECTURER' } },
-  { username: 'admin1@gmail.com',   password: '123456', token: 'mock-token-admin',    user: { id: 3, name: 'Lê Văn C',      role: 'ADMIN' } },
-  { username: 'advisor1@gmail.com', password: '123456', token: 'mock-token-advisor',  user: { id: 4, name: 'Lê Văn D',      role: 'ACADEMIC_ADVISOR' } },
+  { username: 'lan.nguyen@student.edu.vn', password: 'Demo@123456', token: 'mock-token-student',  user: { id: 1, name: 'Nguyễn Thị Lan',  role: 'STUDENT' } },
+  { username: 'an.nguyen@edu.vn',          password: 'Demo@123456', token: 'mock-token-lecturer', user: { id: 2, name: 'GS. Nguyễn Văn An',    role: 'LECTURER' } },
+  { username: 'khoa.tran@admin.edu.vn',   password: 'Demo@123456', token: 'mock-token-admin',    user: { id: 3, name: 'Trần Minh Khoa',      role: 'ADMIN' } },
+  { username: 'hoa.pham@edu.vn', password: 'Demo@123456', token: 'mock-token-advisor',  user: { id: 4, name: 'TS. Phạm Thị Hoa',      role: 'ACADEMIC_ADVISOR' } },
 ];
 
 function mockLogin(credentials) {
