@@ -21,7 +21,9 @@ import com.example.backend.repository.TuitionRecordRepository;
 import com.example.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -40,9 +42,25 @@ public class CourseRegistrationService {
     private final CourseSectionScheduleRepository scheduleRepository;
     private final CoursePrerequisiteRepository prerequisiteRepository;
     private final TuitionRecordRepository tuitionRecordRepository;
+    private final RedisLockService redisLockService;
+    private final PlatformTransactionManager transactionManager;
 
-    @Transactional
     public EnrollmentResponse register(String username, RegistrationRequest request) {
+        String lockKey = "registration:course-section:" + request.getCourseSectionId();
+
+        return redisLockService.executeWithLock(lockKey, () -> {
+            EnrollmentResponse response = new TransactionTemplate(transactionManager)
+                    .execute(status -> registerWithTransaction(username, request));
+
+            if (response == null) {
+                throw new RuntimeException("Registration failed");
+            }
+
+            return response;
+        });
+    }
+
+    private EnrollmentResponse registerWithTransaction(String username, RegistrationRequest request) {
         Student student = findStudentByUsername(username);
         CourseSection section = findCourseSection(request.getCourseSectionId());
 
