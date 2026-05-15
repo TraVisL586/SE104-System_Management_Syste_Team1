@@ -28,6 +28,7 @@ public class CourseSectionResponse {
 
     private Integer capacity;
     private Integer enrolledCount;
+    private Integer availableSeats;
     private CourseSectionStatus status;
     private List<CourseSectionScheduleResponse> schedules;
     private LocalDateTime createdAt;

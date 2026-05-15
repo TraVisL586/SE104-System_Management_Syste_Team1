@@ -3,6 +3,8 @@ package com.example.backend.controller;
 import com.example.backend.dto.request.RegistrationRequest;
 import com.example.backend.dto.response.EnrollmentResponse;
 import com.example.backend.service.CourseRegistrationService;
+import com.example.backend.dto.response.CourseSectionResponse;
+import com.example.backend.service.CourseSectionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +19,7 @@ import java.util.List;
 public class CourseRegistrationController {
 
     private final CourseRegistrationService courseRegistrationService;
+    private final CourseSectionService courseSectionService;
 
     @PostMapping("/api/student/registrations")
     public ResponseEntity<EnrollmentResponse> register(
@@ -52,5 +55,11 @@ public class CourseRegistrationController {
     @GetMapping("/api/admin/registrations/students/{studentId:\\d+}")
     public ResponseEntity<List<EnrollmentResponse>> getEnrollmentsByStudent(@PathVariable Integer studentId) {
         return ResponseEntity.ok(courseRegistrationService.getEnrollmentsByStudent(studentId));
+    }
+    @GetMapping("/api/student/course-sections/open")
+    public ResponseEntity<List<CourseSectionResponse>> getOpenCourseSections(
+            @RequestParam(required = false) Integer semesterId,
+            @RequestParam(required = false) String keyword) {
+        return ResponseEntity.ok(courseSectionService.getOpenCourseSections(semesterId, keyword));
     }
 }

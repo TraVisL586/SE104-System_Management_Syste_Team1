@@ -12,6 +12,7 @@ public class CourseSectionScheduleResponse {
     private Integer roomId;
     private String roomCode;
     private String roomName;
+    private String building;
     private Integer dayOfWeek;
     private LocalTime startTime;
     private LocalTime endTime;

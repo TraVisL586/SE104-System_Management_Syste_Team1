@@ -114,6 +114,16 @@ public class CourseSectionService {
                 .toList();
     }
 
+    public List<CourseSectionResponse> getOpenCourseSections(Integer semesterId, String keyword) {
+        String normalizedKeyword = keyword == null ? "" : keyword.trim();
+
+        return courseSectionRepository
+                .searchOpenSections(CourseSectionStatus.OPEN, semesterId, normalizedKeyword)
+                .stream()
+                .map(section -> mapToResponse(section, true))
+                .toList();
+    }
+
     @Transactional
     public void removeSchedule(Integer sectionId, Integer scheduleId) {
         findSection(sectionId);
@@ -214,6 +224,7 @@ public class CourseSectionService {
 
         response.setCapacity(section.getCapacity());
         response.setEnrolledCount(section.getEnrolledCount());
+        response.setAvailableSeats(section.getCapacity() - section.getEnrolledCount());
         response.setStatus(section.getStatus());
         response.setCreatedAt(section.getCreatedAt());
 
@@ -232,6 +243,7 @@ public class CourseSectionService {
         response.setRoomId(schedule.getRoom().getId());
         response.setRoomCode(schedule.getRoom().getCode());
         response.setRoomName(schedule.getRoom().getName());
+        response.setBuilding(schedule.getRoom().getBuilding());
         response.setDayOfWeek(schedule.getDayOfWeek());
         response.setStartTime(schedule.getStartTime());
         response.setEndTime(schedule.getEndTime());
