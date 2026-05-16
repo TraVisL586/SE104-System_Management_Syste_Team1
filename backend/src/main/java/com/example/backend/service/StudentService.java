@@ -135,8 +135,13 @@ public class StudentService {
         Student student = studentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
 
-        studentRepository.delete(student);
-        userRepository.delete(student.getUser());
+        User user = student.getUser();
+        user.setIsActive(false);
+
+        student.setAcademicStatus(StudentAcademicStatus.SUSPENDED);
+
+        userRepository.save(user);
+        studentRepository.save(student);
     }
 
     @Transactional
