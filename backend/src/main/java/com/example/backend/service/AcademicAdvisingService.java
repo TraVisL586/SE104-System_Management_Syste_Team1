@@ -79,7 +79,7 @@ public class AcademicAdvisingService {
 
         AcademicAdvisor advisor = advisorStudentRepository.findByStudentId(student.getId())
                 .map(AdvisorStudent::getAdvisor)
-                .orElse(null);
+                .orElseThrow(() -> new RuntimeException("Student has not been assigned to an advisor"));
 
         AcademicRequest academicRequest = new AcademicRequest();
         academicRequest.setStudent(student);

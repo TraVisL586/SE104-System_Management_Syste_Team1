@@ -23,6 +23,7 @@ public class CourseSectionService {
     private final LecturerRepository lecturerRepository;
     private final SemesterRepository semesterRepository;
     private final RoomRepository roomRepository;
+    private final EnrollmentRepository enrollmentRepository;
 
     @Transactional
     public CourseSectionResponse create(CourseSectionRequest request) {
@@ -71,8 +72,14 @@ public class CourseSectionService {
     public void delete(Integer id) {
         CourseSection section = findSection(id);
 
-        if (section.getEnrolledCount() != null && section.getEnrolledCount() > 0) {
-            throw new RuntimeException("Cannot delete course section with enrolled students");
+        if (!enrollmentRepository.findByCourseSectionId(id).isEmpty()) {
+            section.setStatus(CourseSectionStatus.CANCELLED);
+            courseSectionRepository.save(section);
+            return;
+        }
+
+        if (!scheduleRepository.findByCourseSectionId(id).isEmpty()) {
+            throw new RuntimeException("Cannot delete course section with schedules");
         }
 
         courseSectionRepository.delete(section);

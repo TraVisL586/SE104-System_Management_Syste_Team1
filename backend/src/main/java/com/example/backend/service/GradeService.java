@@ -30,6 +30,7 @@ public class GradeService {
     private final UserRepository userRepository;
     private final StudentRepository studentRepository;
     private final LecturerRepository lecturerRepository;
+    private final CourseSectionRepository courseSectionRepository;
 
     public List<GradeResponse> getSectionGradesForLecturer(String username, Integer sectionId) {
         Lecturer lecturer = findLecturerByUsername(username);
@@ -239,22 +240,13 @@ public class GradeService {
     }
 
     private void assertLecturerTeachesSection(Lecturer lecturer, Integer sectionId) {
-        boolean teaches = lecturer.getId().equals(
-                findEnrollmentSectionLecturerId(sectionId)
-        );
+        CourseSection section = courseSectionRepository.findById(sectionId)
+                .orElseThrow(() -> new RuntimeException("Course section not found"));
 
-        if (!teaches) {
+        if (!section.getLecturer().getId().equals(lecturer.getId())) {
             throw new RuntimeException("Lecturer does not teach this course section");
         }
     }
-
-    private Integer findEnrollmentSectionLecturerId(Integer sectionId) {
-        return enrollmentRepository.findByCourseSectionId(sectionId).stream()
-                .findFirst()
-                .map(enrollment -> enrollment.getCourseSection().getLecturer().getId())
-                .orElseThrow(() -> new RuntimeException("Course section has no enrollments"));
-    }
-
     private Enrollment findEnrollment(Integer id) {
         return enrollmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Enrollment not found"));
