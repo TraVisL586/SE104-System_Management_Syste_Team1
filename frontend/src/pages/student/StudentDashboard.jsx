@@ -1,12 +1,16 @@
 import { useNavigate } from "react-router";
 import { useRole } from "../../context/RoleContext";
+import { useToast } from "../../context/ToastContext";
+import { useEffect, useState } from "react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import {
   BookOpen, Calendar, Award, CreditCard, FileText, AlertTriangle,
-  TrendingUp, Clock, ChevronRight,
+  TrendingUp, Clock, ChevronRight, Loader2,
 } from "lucide-react";
+import studentService from "../../services/studentService";
+import ChangePasswordModal from "../../components/ChangePasswordModal";
 
 const GPA_TREND = [
   { ky: "HK1/23", gpa: 7.2 },
@@ -48,6 +52,68 @@ const STAT_CARDS = [
 export function StudentDashboard() {
   const { user } = useRole();
   const navigate = useNavigate();
+  const { showToast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        setLoading(true);
+        const data = await studentService.getMyProfile();
+        setProfile(data);
+        setError(null);
+      } catch (err) {
+        setError(err.message || 'Failed to load profile');
+        showToast('error', 'Error', err.message || 'Failed to load profile');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, [showToast]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="animate-spin" size={40} />
+      </div>
+    );
+  }
+
+  const ENROLLED_COURSES = [
+  { code: "CSC401", name: "Hệ điều hành",         tc: 3, gv: "GS. Nguyễn Văn An", lich: "T2 7:30",  room: "B201" },
+  { code: "MTH302", name: "Xác suất Thống kê",     tc: 3, gv: "TS. Lê Thị Bình",   lich: "T3 9:30",  room: "A105" },
+  { code: "CSC312", name: "Mạng máy tính",          tc: 3, gv: "PGS. Phạm Văn Cường",lich: "T4 13:30", room: "C301" },
+  { code: "ENG201", name: "Tiếng Anh Chuyên ngành", tc: 2, gv: "ThS. Nguyễn Thị Dung",lich: "T5 7:30", room: "D102" },
+  { code: "CSC420", name: "Trí tuệ nhân tạo",       tc: 3, gv: "GS. Trần Minh Tú",   lich: "T6 9:30",  room: "B305" },
+  { code: "CSC380", name: "Kiểm thử phần mềm",      tc: 3, gv: "TS. Hoàng Văn Đức",  lich: "T2 13:30", room: "Lab C2" },
+];
+
+const RECENT_GRADES = [
+  { mon: "Lập trình Web", giuaky: 8.5, cuoiky: null,  tc: 3 },
+  { mon: "CSDL Nâng cao",  giuaky: 7.8, cuoiky: 8.2,  tc: 3 },
+  { mon: "Kiến trúc PM",   giuaky: 9.0, cuoiky: null,  tc: 3 },
+];
+
+const UPCOMING = [
+  { time: "T2 07:30", mon: "Hệ điều hành",      room: "B201", type: "lecture" },
+  { time: "T2 13:30", mon: "Kiểm thử PM",        room: "Lab C2", type: "lab" },
+  { time: "T3 09:30", mon: "Xác suất Thống kê",  room: "A105", type: "lecture" },
+];
+
+const STAT_CARDS = [
+  { label: "GPA Tích lũy",     value: "8.30",   sub: "Xếp loại: Giỏi",        icon: TrendingUp,  color: "#2563eb", bg: "#dbeafe" },
+  { label: "Tín chỉ HK này",   value: "17/24",  sub: "BR-2: Tối đa 24 TC",    icon: BookOpen,    color: "#8b5cf6", bg: "#ede9fe" },
+  { label: "Tín chỉ Tích lũy", value: "86/130", sub: "66% chương trình",      icon: Award,       color: "#10b981", bg: "#d1fae5" },
+  { label: "Học phí còn lại",  value: "4.2 tr", sub: "⚠ Hạn: 30/05/2026",    icon: CreditCard,  color: "#f59e0b", bg: "#fef3c7" },
+];
+
+  const displayName = profile?.name || user?.name || "Sinh viên";
+  const studentCode = profile?.studentCode || user?.id || "N/A";
+  const department = profile?.department || user?.department || "N/A";
   const totalTC = ENROLLED_COURSES.reduce((s, c) => s + c.tc, 0);
 
   return (
@@ -59,9 +125,9 @@ export function StudentDashboard() {
       >
         <div>
           <p style={{ color: "#93c5fd", fontSize: "0.82rem" }}>Chào mừng trở lại 👋</p>
-          <h1 style={{ color: "white", marginTop: 2 }}>{user?.name ?? "Sinh viên"}</h1>
+          <h1 style={{ color: "white", marginTop: 2 }}>{displayName}</h1>
           <p style={{ color: "#bfdbfe", fontSize: "0.8rem", marginTop: 4 }}>
-            {user?.id} · {user?.department} · Học kỳ 2 — Năm học 2025/2026
+            {studentCode} · {department} · Học kỳ 2 — Năm học 2025/2026
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -79,6 +145,7 @@ export function StudentDashboard() {
               <Icon size={14} /> {label}
             </button>
           ))}
+          <ChangePasswordModal />
         </div>
       </div>
 
