@@ -21,6 +21,9 @@ import AcademicAdminWorkspacePage from '../pages/admin/AcademicAdminWorkspacePag
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import CourseSections from '../pages/admin/CourseSections';
 import CurriculumMgmt from '../pages/admin/CurriculumMgmt';
+import DepartmentManagement from '../pages/admin/DepartmentManagement';
+import ProgramManagement from '../pages/admin/ProgramManagement';
+import CourseManagement from '../pages/admin/CourseManagement';
 import TimetableManager from '../pages/admin/TimetableManager';
 import StudentManagement from '../pages/admin/StudentManagement';
 import AccountManagement from '../pages/admin/AccountManagement';
@@ -271,6 +274,30 @@ const appRouter = createBrowserRouter([
         element: (
           <ProtectedRoute allowedRoles={ADMIN_ROLES}>
             <CurriculumMgmt />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/admin/departments',
+        element: (
+          <ProtectedRoute allowedRoles={ADMIN_ROLES}>
+            <DepartmentManagement />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/admin/programs',
+        element: (
+          <ProtectedRoute allowedRoles={ADMIN_ROLES}>
+            <ProgramManagement />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/admin/catalog-courses',
+        element: (
+          <ProtectedRoute allowedRoles={ADMIN_ROLES}>
+            <CourseManagement />
           </ProtectedRoute>
         ),
       },

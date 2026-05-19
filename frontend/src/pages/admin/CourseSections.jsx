@@ -1,70 +1,97 @@
-import { useState } from "react";
-import { Plus, Search, Edit2, Trash2, BookMarked, Users, CheckCircle2, XCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Search, Trash2, BookMarked, Users, CheckCircle2, XCircle, Loader2, Edit2 } from "lucide-react";
 import { useToast } from "../../context/ToastContext";
-
-const INITIAL = [
-  { id: "CS001", code: "CSC401-L01", name: "Hệ điều hành",        gv: "GS. Nguyễn Văn An",  room: "B201", lich: "T2 07:30", max: 50, enrolled: 42, status: "open"   },
-  { id: "CS002", code: "CSC401-L02", name: "Hệ điều hành",        gv: "GS. Nguyễn Văn An",  room: "B202", lich: "T4 09:30", max: 50, enrolled: 38, status: "open"   },
-  { id: "CS003", code: "CSC420-L01", name: "Trí tuệ Nhân tạo",   gv: "GS. Trần Minh Tú",   room: "B305", lich: "T6 09:30", max: 50, enrolled: 45, status: "open"   },
-  { id: "CS004", code: "MTH302-L01", name: "Xác suất Thống kê",   gv: "TS. Lê Thị Bình",    room: "A105", lich: "T3 09:30", max: 60, enrolled: 58, status: "open"   },
-  { id: "CS005", code: "CSC501-L01", name: "Học máy",             gv: "TS. Phạm Ngọc Anh",  room: "B401", lich: "T5 13:30", max: 35, enrolled: 28, status: "open"   },
-  { id: "CS006", code: "CSC490-G01", name: "Đồ án TN I",          gv: "PGS. Hoàng Văn Đức", room: "—",    lich: "T5 07:30", max: 20, enrolled: 20, status: "full"   },
-  { id: "CS007", code: "ENG201-L01", name: "Tiếng Anh CN",        gv: "ThS. Nguyễn Thị Dung",room:"D102",lich: "T2 13:30", max: 45, enrolled: 44, status: "open"   },
-  { id: "CS008", code: "CSC302-L01", name: "CSDL Nâng cao",       gv: "TS. Lê Văn Hải",     room: "C301", lich: "T6 13:30", max: 50, enrolled: 0,  status: "closed" },
-];
-
-const STATUS_CFG = {
-  open:   { label: "Đang mở",  color: "#10b981", bg: "#d1fae5" },
-  full:   { label: "Đã đầy",   color: "#f59e0b", bg: "#fef3c7" },
-  closed: { label: "Đã đóng",  color: "#64748b", bg: "#f1f5f9" },
-};
+import adminSchedulingService from "../../services/adminSchedulingService";
 
 export function CourseSections() {
-  const [sections, setSections] = useState(INITIAL);
-  const [search,   setSearch]   = useState("");
+  const [sections, setSections] = useState([]);
+  const [semesters, setSemesters] = useState([]);
+  const [rooms, setRooms] = useState([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm]         = useState({ code: "", name: "", gv: "", room: "", lich: "", max: 50 });
-  const { showToast }           = useToast();
+  const [editId, setEditId] = useState(null);
+  const [form, setForm] = useState({ code: "", courseId: "", semesterId: "", lecturerId: "", capacity: 50 });
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    fetchAll();
+  }, []);
+
+  const fetchAll = async () => {
+    try {
+      setLoading(true);
+      const [secData, semData, rmData] = await Promise.all([
+        adminSchedulingService.getCourseSections(),
+        adminSchedulingService.getSemesters(),
+        adminSchedulingService.getRooms(),
+      ]);
+      setSections(Array.isArray(secData) ? secData : []);
+      setSemesters(Array.isArray(semData) ? semData : []);
+      setRooms(Array.isArray(rmData) ? rmData : []);
+    } catch (error) {
+      showToast("error", "Lỗi", "Không thể tải danh sách lớp học phần");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filtered = sections.filter(
     (s) =>
-      s.code.toLowerCase().includes(search.toLowerCase()) ||
-      s.name.toLowerCase().includes(search.toLowerCase()) ||
-      s.gv.toLowerCase().includes(search.toLowerCase())
+      (s.code || "").toLowerCase().includes(search.toLowerCase()) ||
+      (s.courseName || "").toLowerCase().includes(search.toLowerCase()) ||
+      (s.lecturerName || "").toLowerCase().includes(search.toLowerCase())
   );
 
-  function toggleStatus(id) {
-    setSections((prev) =>
-      prev.map((s) =>
-        s.id === id
-          ? { ...s, status: s.status === "open" ? "closed" : "open" }
-          : s
-      )
-    );
-    const s = sections.find((x) => x.id === id);
-    showToast("success", "Cập nhật trạng thái", `${s?.code} — ${s?.status === "open" ? "Đã đóng" : "Đã mở"}`);
-  }
+  const openCount = sections.filter(s => s.status === "OPEN" || !s.status).length;
+  const fullCount = sections.filter(s => (s.enrolledCount || 0) >= (s.capacity || 1)).length;
+  const closedCount = sections.filter(s => s.status === "CLOSED").length;
 
-  function deleteSection(id) {
-    const s = sections.find((x) => x.id === id);
-    setSections((prev) => prev.filter((x) => x.id !== id));
-    showToast("info", "Đã xóa lớp học phần", s?.code);
-  }
-
-  function addSection(e) {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const newSection = {
-      id: `CS${Date.now()}`,
-      ...form,
-      max: parseInt(form.max),
-      enrolled: 0,
-      status: "open",
-    };
-    setSections((prev) => [newSection, ...prev]);
-    showToast("success", "Tạo lớp học phần thành công!", form.code);
-    setForm({ code: "", name: "", gv: "", room: "", lich: "", max: 50 });
-    setShowForm(false);
-  }
+    try {
+      setSubmitting(true);
+      if (editId) {
+        await adminSchedulingService.updateCourseSection(editId, form);
+        showToast("success", "Thành công", "Đã cập nhật lớp học phần");
+      } else {
+        await adminSchedulingService.createCourseSection(form);
+        showToast("success", "Thành công", "Đã tạo lớp học phần mới");
+      }
+      setForm({ code: "", courseId: "", semesterId: "", lecturerId: "", capacity: 50 });
+      setShowForm(false);
+      setEditId(null);
+      fetchAll();
+    } catch (error) {
+      showToast("error", "Lỗi", error.message || "Không thể lưu lớp học phần");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa lớp học phần này?")) return;
+    try {
+      await adminSchedulingService.deleteCourseSection(id);
+      showToast("info", "Đã xóa", "Lớp học phần đã được xóa");
+      fetchAll();
+    } catch (error) {
+      showToast("error", "Lỗi", "Không thể xóa lớp học phần");
+    }
+  };
+
+  const openEdit = (sec) => {
+    setEditId(sec.id);
+    setForm({
+      code: sec.code || "",
+      courseId: sec.courseId || "",
+      semesterId: sec.semesterId || "",
+      lecturerId: sec.lecturerId || "",
+      capacity: sec.capacity || 50,
+    });
+    setShowForm(true);
+  };
 
   return (
     <div className="space-y-5">
@@ -72,11 +99,11 @@ export function CourseSections() {
         <div>
           <h1 style={{ color: "#1e293b" }}>Quản lý Lớp học phần</h1>
           <p style={{ color: "#64748b", fontSize: "0.875rem", marginTop: 2 }}>
-            Mở, đóng và quản lý các lớp học phần — UC10
+            Mở, đóng và quản lý các lớp học phần
           </p>
         </div>
         <button
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => { setShowForm((v) => !v); setEditId(null); setForm({ code: "", courseId: "", semesterId: "", lecturerId: "", capacity: 50 }); }}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl"
           style={{ backgroundColor: "#065f46", color: "white", border: "none", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600 }}
         >
@@ -86,31 +113,36 @@ export function CourseSections() {
 
       {showForm && (
         <div className="rounded-2xl p-6" style={{ backgroundColor: "#fff", border: "1px solid #e2e8f0" }}>
-          <p style={{ fontWeight: 700, fontSize: "1rem", color: "#1e293b", marginBottom: 16 }}>Thêm lớp học phần mới</p>
-          <form onSubmit={addSection} className="grid grid-cols-2 gap-4">
-            {[
-              { key: "code",  label: "Mã lớp HP",       placeholder: "VD: CSC501-L02" },
-              { key: "name",  label: "Tên môn học",      placeholder: "VD: Học máy" },
-              { key: "gv",    label: "Giảng viên",       placeholder: "VD: TS. Nguyễn Văn A" },
-              { key: "room",  label: "Phòng học",        placeholder: "VD: B401" },
-              { key: "lich",  label: "Lịch học",         placeholder: "VD: T2 07:30" },
-              { key: "max",   label: "Sĩ số tối đa",     placeholder: "50", type: "number" },
-            ].map(({ key, label, placeholder, type }) => (
-              <div key={key}>
-                <label style={{ fontSize: "0.78rem", fontWeight: 600, color: "#334155", display: "block", marginBottom: 5 }}>{label}</label>
-                <input
-                  required
-                  type={type ?? "text"}
-                  value={form[key]}
-                  onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))}
-                  placeholder={placeholder}
-                  style={{ width: "100%", padding: "8px 11px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: "0.85rem", outline: "none" }}
-                />
-              </div>
-            ))}
+          <p style={{ fontWeight: 700, fontSize: "1rem", color: "#1e293b", marginBottom: 16 }}>{editId ? "Chỉnh sửa lớp học phần" : "Thêm lớp học phần mới"}</p>
+          <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Mã lớp HP *</label>
+              <input required value={form.code} onChange={(e) => setForm(p => ({ ...p, code: e.target.value }))} placeholder="VD: CSC501-L02" className="w-full p-2 border rounded-lg text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Course ID *</label>
+              <input required type="number" value={form.courseId} onChange={(e) => setForm(p => ({ ...p, courseId: e.target.value }))} placeholder="VD: 1" className="w-full p-2 border rounded-lg text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Học kỳ *</label>
+              <select required value={form.semesterId} onChange={(e) => setForm(p => ({ ...p, semesterId: e.target.value }))} className="w-full p-2 border rounded-lg text-sm">
+                <option value="">Chọn học kỳ</option>
+                {semesters.map(s => <option key={s.id} value={s.id}>{s.name || s.code}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Lecturer ID</label>
+              <input type="number" value={form.lecturerId} onChange={(e) => setForm(p => ({ ...p, lecturerId: e.target.value }))} placeholder="VD: 2" className="w-full p-2 border rounded-lg text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Sĩ số tối đa</label>
+              <input type="number" value={form.capacity} onChange={(e) => setForm(p => ({ ...p, capacity: parseInt(e.target.value) || 50 }))} className="w-full p-2 border rounded-lg text-sm" />
+            </div>
             <div className="col-span-2 flex gap-3 justify-end">
-              <button type="button" onClick={() => setShowForm(false)} style={{ padding: "8px 18px", borderRadius: 10, border: "1px solid #e2e8f0", background: "none", cursor: "pointer", fontSize: "0.85rem" }}>Hủy</button>
-              <button type="submit" style={{ padding: "8px 18px", borderRadius: 10, backgroundColor: "#065f46", color: "white", border: "none", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600 }}>Tạo lớp</button>
+              <button type="button" onClick={() => { setShowForm(false); setEditId(null); }} className="px-4 py-2 border rounded-lg text-sm cursor-pointer">Hủy</button>
+              <button type="submit" disabled={submitting} className="px-4 py-2 bg-emerald-800 text-white rounded-lg text-sm font-semibold disabled:opacity-50 cursor-pointer">
+                {submitting ? "Đang lưu..." : editId ? "Cập nhật" : "Tạo lớp"}
+              </button>
             </div>
           </form>
         </div>
@@ -119,9 +151,9 @@ export function CourseSections() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Đang mở",  value: sections.filter((s) => s.status === "open").length,   color: "#10b981", bg: "#d1fae5" },
-          { label: "Đã đầy",   value: sections.filter((s) => s.status === "full").length,   color: "#f59e0b", bg: "#fef3c7" },
-          { label: "Đã đóng",  value: sections.filter((s) => s.status === "closed").length, color: "#64748b", bg: "#f1f5f9" },
+          { label: "Đang mở", value: openCount, color: "#10b981", bg: "#d1fae5" },
+          { label: "Đã đầy", value: fullCount, color: "#f59e0b", bg: "#fef3c7" },
+          { label: "Đã đóng", value: closedCount, color: "#64748b", bg: "#f1f5f9" },
         ].map(({ label, value, color, bg }) => (
           <div key={label} className="rounded-xl p-3 text-center" style={{ backgroundColor: bg }}>
             <p style={{ fontSize: "1.4rem", fontWeight: 800, color }}>{value}</p>
@@ -143,76 +175,73 @@ export function CourseSections() {
             />
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full" style={{ minWidth: 800 }}>
-            <thead>
-              <tr style={{ backgroundColor: "#f8fafc" }}>
-                {["Mã lớp HP", "Môn học", "Giảng viên", "Lịch / Phòng", "Sĩ số", "Trạng thái", "Thao tác"].map((h) => (
-                  <th key={h} className="text-left px-4 py-3" style={{ fontSize: "0.65rem", color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((s) => {
-                const cfg = STATUS_CFG[s.status];
-                return (
-                  <tr key={s.id} style={{ borderTop: "1px solid #f1f5f9" }}>
-                    <td className="px-4 py-3" style={{ fontFamily: "monospace", fontSize: "0.78rem", color: "#10b981", fontWeight: 700 }}>{s.code}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <BookMarked size={14} color="#8b5cf6" />
-                        <span style={{ fontSize: "0.85rem", color: "#1e293b" }}>{s.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3" style={{ fontSize: "0.78rem", color: "#64748b" }}>{s.gv}</td>
-                    <td className="px-4 py-3">
-                      <p style={{ fontSize: "0.78rem", color: "#1e293b" }}>{s.lich}</p>
-                      <p style={{ fontSize: "0.68rem", color: "#94a3b8" }}>{s.room}</p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <Users size={13} color="#94a3b8" />
-                        <span style={{ fontSize: "0.82rem", color: "#1e293b" }}>{s.enrolled}/{s.max}</span>
-                      </div>
-                      <div style={{ height: 4, backgroundColor: "#e2e8f0", borderRadius: 9999, marginTop: 4, width: 60, overflow: "hidden" }}>
-                        <div style={{ width: `${(s.enrolled / s.max) * 100}%`, height: "100%", backgroundColor: s.enrolled >= s.max ? "#ef4444" : "#10b981", borderRadius: 9999 }} />
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span style={{ fontSize: "0.72rem", fontWeight: 600, padding: "3px 9px", borderRadius: 9999, backgroundColor: cfg.bg, color: cfg.color }}>
-                        {cfg.label}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-1.5">
-                        <button
-                          onClick={() => toggleStatus(s.id)}
-                          title={s.status === "open" ? "Đóng lớp" : "Mở lớp"}
-                          style={{ width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, border: "1px solid #e2e8f0", background: "none", cursor: "pointer" }}
-                        >
-                          {s.status === "open" ? <XCircle size={14} color="#ef4444" /> : <CheckCircle2 size={14} color="#10b981" />}
-                        </button>
-                        <button
-                          title="Chỉnh sửa"
-                          style={{ width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, border: "1px solid #e2e8f0", background: "none", cursor: "pointer" }}
-                        >
-                          <Edit2 size={14} color="#2563eb" />
-                        </button>
-                        <button
-                          onClick={() => deleteSection(s.id)}
-                          title="Xóa"
-                          style={{ width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, border: "1px solid #e2e8f0", background: "none", cursor: "pointer" }}
-                        >
-                          <Trash2 size={14} color="#ef4444" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <Loader2 className="animate-spin text-green-600" size={32} />
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full" style={{ minWidth: 800 }}>
+              <thead>
+                <tr style={{ backgroundColor: "#f8fafc" }}>
+                  {["Mã lớp HP", "Môn học", "Giảng viên", "Sĩ số", "Trạng thái", "Thao tác"].map((h) => (
+                    <th key={h} className="text-left px-4 py-3" style={{ fontSize: "0.65rem", color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr><td colSpan="6" className="text-center py-6 text-sm text-slate-500">Không có lớp học phần nào</td></tr>
+                ) : filtered.map((s) => {
+                  const isFull = (s.enrolledCount || 0) >= (s.capacity || 1);
+                  const isClosed = s.status === "CLOSED";
+                  const statusCfg = isClosed
+                    ? { label: "Đã đóng", color: "#64748b", bg: "#f1f5f9" }
+                    : isFull
+                    ? { label: "Đã đầy", color: "#f59e0b", bg: "#fef3c7" }
+                    : { label: "Đang mở", color: "#10b981", bg: "#d1fae5" };
+                  return (
+                    <tr key={s.id} style={{ borderTop: "1px solid #f1f5f9" }}>
+                      <td className="px-4 py-3" style={{ fontFamily: "monospace", fontSize: "0.78rem", color: "#10b981", fontWeight: 700 }}>{s.code}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <BookMarked size={14} color="#8b5cf6" />
+                          <span style={{ fontSize: "0.85rem", color: "#1e293b" }}>{s.courseName || `Course #${s.courseId}`}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3" style={{ fontSize: "0.78rem", color: "#64748b" }}>{s.lecturerName || `Lecturer #${s.lecturerId || "—"}`}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <Users size={13} color="#94a3b8" />
+                          <span style={{ fontSize: "0.82rem", color: "#1e293b" }}>{s.enrolledCount || 0}/{s.capacity || 0}</span>
+                        </div>
+                        <div style={{ height: 4, backgroundColor: "#e2e8f0", borderRadius: 9999, marginTop: 4, width: 60, overflow: "hidden" }}>
+                          <div style={{ width: `${Math.min(100, ((s.enrolledCount || 0) / (s.capacity || 1)) * 100)}%`, height: "100%", backgroundColor: isFull ? "#ef4444" : "#10b981", borderRadius: 9999 }} />
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span style={{ fontSize: "0.72rem", fontWeight: 600, padding: "3px 9px", borderRadius: 9999, backgroundColor: statusCfg.bg, color: statusCfg.color }}>
+                          {statusCfg.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-1.5">
+                          <button onClick={() => openEdit(s)} title="Chỉnh sửa" style={{ width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, border: "1px solid #e2e8f0", background: "none", cursor: "pointer" }}>
+                            <Edit2 size={14} color="#2563eb" />
+                          </button>
+                          <button onClick={() => handleDelete(s.id)} title="Xóa" style={{ width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, border: "1px solid #e2e8f0", background: "none", cursor: "pointer" }}>
+                            <Trash2 size={14} color="#ef4444" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
