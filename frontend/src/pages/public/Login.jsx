@@ -4,39 +4,9 @@ import { GraduationCap, Eye, EyeOff, Lock, Mail, AlertCircle } from "lucide-reac
 import { useRole } from "../../context/RoleContext.jsx";
 import { login as loginRequest } from "../../services/AuthService";
 
-const DEMO_ACCOUNTS = [
-  {
-    role: "STUDENT",
-    email: "lan.nguyen@student.edu.vn",
-    label: "Sinh viên",
-    color: "#2563eb",
-    bg: "#dbeafe"
-  },
-  {
-    role: "LECTURER",
-    email: "an.nguyen@edu.vn",
-    label: "Giảng viên",
-    color: "#8b5cf6",
-    bg: "#ede9fe"
-  },
-  {
-    role: "ADMIN",
-    email: "khoa.tran@admin.edu.vn",
-    label: "Quản trị",
-    color: "#10b981",
-    bg: "#d1fae5"
-  },
-  {
-    role: "ACADEMIC_ADVISOR", // Lưu ý: Đổi thành ADVISOR cho khớp với DEMO_USERS của bạn
-    email: "hoa.pham@edu.vn",
-    label: "Cố vấn",
-    color: "#f59e0b",
-    bg: "#fef3c7"
-  },
-];
 
 export function Login() {
-  const [email,    setEmail]    = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPw,   setShowPw]   = useState(false);
   const [error,    setError]    = useState("");
@@ -44,26 +14,20 @@ export function Login() {
   const { loginWithBackend } = useRole();
   const navigate  = useNavigate();
 
-  function fillDemo(acc) {
-    setEmail(acc.email);
-    setPassword("Demo@123456");
-    setError("");
-  }
-
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const username = email.trim();
+    const trimmedUsername = username.trim();
 
-    if (!username || !password) {
+    if (!trimmedUsername || !password) {
       setError("Vui lòng nhập đầy đủ thông tin đăng nhập.");
       setLoading(false);
       return;
     }
 
     try {
-      const response = await loginRequest({ username, password });
+      const response = await loginRequest({ username: trimmedUsername, password });
       loginWithBackend(response);
       navigate("/", { replace: true });
     } catch (err) {
@@ -104,15 +68,15 @@ export function Login() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "#334155", display: "block", marginBottom: 6 }}>
-                Email <span style={{ color: "#ef4444" }}>*</span>
+                Tên đăng nhập <span style={{ color: "#ef4444" }}>*</span>
               </label>
               <div style={{ position: "relative" }}>
                 <Mail size={15} color="#94a3b8" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your.email@edu.vn"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Nhập tên đăng nhập"
                   style={{ width: "100%", paddingLeft: 38, paddingRight: 14, paddingTop: 11, paddingBottom: 11, borderRadius: 12, border: "1px solid #e2e8f0", fontSize: "0.88rem", color: "#334155", outline: "none" }}
                 />
               </div>
@@ -160,30 +124,7 @@ export function Login() {
             </button>
           </form>
 
-          {/* Demo accounts */}
-          <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid #f1f5f9" }}>
-            <p style={{ fontSize: "0.72rem", color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
-              Tài khoản Demo — click để điền tự động
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {DEMO_ACCOUNTS.map((acc) => (
-                <button
-                  key={acc.role}
-                  type="button"
-                  onClick={() => fillDemo(acc)}
-                  style={{
-                    padding: "9px 10px", borderRadius: 10, textAlign: "left", cursor: "pointer",
-                    backgroundColor: acc.bg,
-                    border: `1px solid ${acc.color}30`,
-                  }}
-                >
-                  <p style={{ fontSize: "0.78rem", fontWeight: 700, color: acc.color }}>{acc.label}</p>
-                  <p style={{ fontSize: "0.62rem", color: "#64748b", marginTop: 1 }} className="truncate">{acc.email}</p>
-                </button>
-              ))}
-            </div>
-            <p style={{ fontSize: "0.65rem", color: "#94a3b8", marginTop: 8, textAlign: "center" }}>Mật khẩu demo: <code style={{ backgroundColor: "#f1f5f9", padding: "1px 5px", borderRadius: 4 }}>Demo@123456</code></p>
-          </div>
+
         </div>
       </div>
     </div>
