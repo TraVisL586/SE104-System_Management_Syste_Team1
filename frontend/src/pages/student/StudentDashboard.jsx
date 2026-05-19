@@ -1,54 +1,121 @@
 import { useNavigate } from "react-router";
 import { useRole } from "../../context/RoleContext";
+import { useToast } from "../../context/ToastContext";
+import { useEffect, useState } from "react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import {
   BookOpen, Calendar, Award, CreditCard, FileText, AlertTriangle,
-  TrendingUp, Clock, ChevronRight,
+  TrendingUp, Clock, ChevronRight, Loader2,
 } from "lucide-react";
-
-const GPA_TREND = [
-  { ky: "HK1/23", gpa: 7.2 },
-  { ky: "HK2/23", gpa: 7.5 },
-  { ky: "HK1/24", gpa: 7.8 },
-  { ky: "HK2/24", gpa: 8.1 },
-  { ky: "HK1/25", gpa: 7.9 },
-  { ky: "HK2/25", gpa: 8.3 },
-];
-
-const ENROLLED_COURSES = [
-  { code: "CSC401", name: "Hệ điều hành",         tc: 3, gv: "GS. Nguyễn Văn An", lich: "T2 7:30",  room: "B201" },
-  { code: "MTH302", name: "Xác suất Thống kê",     tc: 3, gv: "TS. Lê Thị Bình",   lich: "T3 9:30",  room: "A105" },
-  { code: "CSC312", name: "Mạng máy tính",          tc: 3, gv: "PGS. Phạm Văn Cường",lich: "T4 13:30", room: "C301" },
-  { code: "ENG201", name: "Tiếng Anh Chuyên ngành", tc: 2, gv: "ThS. Nguyễn Thị Dung",lich: "T5 7:30", room: "D102" },
-  { code: "CSC420", name: "Trí tuệ nhân tạo",       tc: 3, gv: "GS. Trần Minh Tú",   lich: "T6 9:30",  room: "B305" },
-  { code: "CSC380", name: "Kiểm thử phần mềm",      tc: 3, gv: "TS. Hoàng Văn Đức",  lich: "T2 13:30", room: "Lab C2" },
-];
-
-const RECENT_GRADES = [
-  { mon: "Lập trình Web", giuaky: 8.5, cuoiky: null,  tc: 3 },
-  { mon: "CSDL Nâng cao",  giuaky: 7.8, cuoiky: 8.2,  tc: 3 },
-  { mon: "Kiến trúc PM",   giuaky: 9.0, cuoiky: null,  tc: 3 },
-];
-
-const UPCOMING = [
-  { time: "T2 07:30", mon: "Hệ điều hành",      room: "B201", type: "lecture" },
-  { time: "T2 13:30", mon: "Kiểm thử PM",        room: "Lab C2", type: "lab" },
-  { time: "T3 09:30", mon: "Xác suất Thống kê",  room: "A105", type: "lecture" },
-];
-
-const STAT_CARDS = [
-  { label: "GPA Tích lũy",     value: "8.30",   sub: "Xếp loại: Giỏi",        icon: TrendingUp,  color: "#2563eb", bg: "#dbeafe" },
-  { label: "Tín chỉ HK này",   value: "17/24",  sub: "BR-2: Tối đa 24 TC",    icon: BookOpen,    color: "#8b5cf6", bg: "#ede9fe" },
-  { label: "Tín chỉ Tích lũy", value: "86/130", sub: "66% chương trình",      icon: Award,       color: "#10b981", bg: "#d1fae5" },
-  { label: "Học phí còn lại",  value: "4.2 tr", sub: "⚠ Hạn: 30/05/2026",    icon: CreditCard,  color: "#f59e0b", bg: "#fef3c7" },
-];
+import studentService from "../../services/studentService";
+import timetableService from "../../services/timetableService";
+import ChangePasswordModal from "../../components/ChangePasswordModal";
 
 export function StudentDashboard() {
   const { user } = useRole();
   const navigate = useNavigate();
-  const totalTC = ENROLLED_COURSES.reduce((s, c) => s + c.tc, 0);
+  const { showToast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState(null);
+  const [grades, setGrades] = useState([]);
+  const [timetable, setTimetable] = useState([]);
+
+  useEffect(() => {
+    const loadAll = async () => {
+      try {
+        setLoading(true);
+        const [profileData, gradesData, ttData] = await Promise.allSettled([
+          studentService.getMyProfile(),
+          studentService.getMyGrades(),
+          timetableService.getStudentTimetable(),
+        ]);
+
+        if (profileData.status === "fulfilled") setProfile(profileData.value);
+        if (gradesData.status === "fulfilled") setGrades(Array.isArray(gradesData.value) ? gradesData.value : []);
+        if (ttData.status === "fulfilled") setTimetable(Array.isArray(ttData.value) ? ttData.value : []);
+      } catch (err) {
+        showToast('error', 'Lỗi', 'Không thể tải dữ liệu dashboard');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadAll();
+  }, [showToast]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="animate-spin" size={40} />
+      </div>
+    );
+  }
+
+  const displayName = profile?.name || user?.name || "Sinh viên";
+  const studentCode = profile?.studentCode || user?.id || "N/A";
+  const department = profile?.department || profile?.departmentName || user?.department || "N/A";
+
+  // Calculate stats from real data
+  const publishedGrades = grades.filter(g => g.status === "PUBLISHED" || g.gradeStatus === "PUBLISHED");
+  let totalCredits = 0;
+  let totalScorePoints = 0;
+  publishedGrades.forEach(g => {
+    const credits = g.credits || 3;
+    totalCredits += credits;
+    if (g.totalScore != null) totalScorePoints += (g.totalScore * credits);
+  });
+  const cumulativeGPA = totalCredits > 0 ? (totalScorePoints / totalCredits) : 0;
+
+  // Build GPA chart from grades
+  const GPA_TREND = publishedGrades.length > 0
+    ? [{ ky: "Tích lũy", gpa: parseFloat(cumulativeGPA.toFixed(2)) }]
+    : [{ ky: "—", gpa: 0 }];
+
+  // Enrolled courses from timetable
+  const uniqueCourses = [];
+  const seenCourses = new Set();
+  timetable.forEach(item => {
+    const key = item.courseCode || item.code;
+    if (key && !seenCourses.has(key)) {
+      seenCourses.add(key);
+      uniqueCourses.push({
+        code: item.courseCode || item.code || "",
+        name: item.courseName || item.name || "",
+        tc: item.credits || 3,
+        lich: item.dayOfWeek ? `${item.dayOfWeek} ${item.startTime || ""}` : item.time || "",
+        room: item.room || "—",
+      });
+    }
+  });
+  const enrolledTC = uniqueCourses.reduce((s, c) => s + (c.tc || 0), 0);
+
+  // Recent grades (last 3 published)
+  const recentGrades = publishedGrades.slice(-3).reverse();
+
+  // Upcoming from timetable (first 3)
+  const upcoming = timetable.slice(0, 3).map(item => ({
+    time: item.dayOfWeek ? `${item.dayOfWeek} ${item.startTime || ""}` : item.time || "",
+    mon: item.courseName || item.name || "",
+    room: item.room || "—",
+    type: item.type === "LAB" || item.type === "lab" ? "lab" : "lecture",
+  }));
+
+  const gradeLabel = (gpa) => {
+    if (gpa >= 8.5) return "Giỏi";
+    if (gpa >= 7.0) return "Khá";
+    if (gpa >= 5.5) return "TB Khá";
+    if (gpa >= 4.0) return "Trung bình";
+    if (gpa > 0) return "Yếu";
+    return "—";
+  };
+
+  const STAT_CARDS = [
+    { label: "GPA Tích lũy",     value: cumulativeGPA > 0 ? cumulativeGPA.toFixed(2) : "—",   sub: `Xếp loại: ${gradeLabel(cumulativeGPA)}`,        icon: TrendingUp,  color: "#2563eb", bg: "#dbeafe" },
+    { label: "Tín chỉ HK này",   value: `${enrolledTC}/24`,  sub: "BR-2: Tối đa 24 TC",    icon: BookOpen,    color: "#8b5cf6", bg: "#ede9fe" },
+    { label: "Tín chỉ Tích lũy", value: `${totalCredits}/130`, sub: `${Math.round((totalCredits/130)*100)}% chương trình`,      icon: Award,       color: "#10b981", bg: "#d1fae5" },
+    { label: "Môn đang học",  value: `${uniqueCourses.length}`, sub: `${enrolledTC} TC đăng ký`,    icon: CreditCard,  color: "#f59e0b", bg: "#fef3c7" },
+  ];
 
   return (
     <div className="space-y-5">
@@ -59,9 +126,9 @@ export function StudentDashboard() {
       >
         <div>
           <p style={{ color: "#93c5fd", fontSize: "0.82rem" }}>Chào mừng trở lại 👋</p>
-          <h1 style={{ color: "white", marginTop: 2 }}>{user?.name ?? "Sinh viên"}</h1>
+          <h1 style={{ color: "white", marginTop: 2 }}>{displayName}</h1>
           <p style={{ color: "#bfdbfe", fontSize: "0.8rem", marginTop: 4 }}>
-            {user?.id} · {user?.department} · Học kỳ 2 — Năm học 2025/2026
+            {studentCode} · {department}
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -79,25 +146,8 @@ export function StudentDashboard() {
               <Icon size={14} /> {label}
             </button>
           ))}
+          <ChangePasswordModal />
         </div>
-      </div>
-
-      {/* Warning */}
-      <div
-        className="flex items-center gap-3 rounded-xl px-4 py-3"
-        style={{ backgroundColor: "#fef3c7", border: "1px solid #fde68a" }}
-      >
-        <AlertTriangle size={16} color="#f59e0b" />
-        <p style={{ fontSize: "0.82rem", color: "#92400e" }}>
-          <strong>Cảnh báo học phí (BR-6):</strong> Còn 4.200.000₫ chưa thanh toán. Hạn nộp:{" "}
-          <strong>30/05/2026</strong>. Vui lòng thanh toán để tránh bị khóa đăng ký.
-        </p>
-        <button
-          onClick={() => navigate("/student/fees")}
-          style={{ marginLeft: "auto", backgroundColor: "#f59e0b", color: "white", border: "none", borderRadius: 8, padding: "4px 12px", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
-        >
-          Thanh toán ngay
-        </button>
       </div>
 
       {/* Stat cards */}
@@ -128,10 +178,10 @@ export function StudentDashboard() {
         >
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p style={{ fontWeight: 700, fontSize: "0.95rem", color: "#1e293b" }}>Xu hướng GPA</p>
-              <p style={{ fontSize: "0.72rem", color: "#64748b" }}>6 học kỳ gần nhất · Thang 10.0 (BR-8)</p>
+              <p style={{ fontWeight: 700, fontSize: "0.95rem", color: "#1e293b" }}>GPA</p>
+              <p style={{ fontSize: "0.72rem", color: "#64748b" }}>Thang 10.0 (BR-8)</p>
             </div>
-            <span style={{ fontSize: "1.4rem", fontWeight: 800, color: "#2563eb" }}>8.30</span>
+            <span style={{ fontSize: "1.4rem", fontWeight: 800, color: "#2563eb" }}>{cumulativeGPA > 0 ? cumulativeGPA.toFixed(2) : "—"}</span>
           </div>
           <ResponsiveContainer width="100%" height={180}>
             <AreaChart data={GPA_TREND}>
@@ -143,7 +193,7 @@ export function StudentDashboard() {
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis dataKey="ky" tick={{ fontSize: 11, fill: "#94a3b8" }} />
-              <YAxis domain={[6, 10]} tick={{ fontSize: 11, fill: "#94a3b8" }} />
+              <YAxis domain={[0, 10]} tick={{ fontSize: 11, fill: "#94a3b8" }} />
               <Tooltip
                 contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: "0.8rem" }}
                 formatter={(v) => [`${v}`, "GPA"]}
@@ -168,7 +218,9 @@ export function StudentDashboard() {
             </button>
           </div>
           <div className="space-y-3">
-            {UPCOMING.map((item, i) => (
+            {upcoming.length === 0 ? (
+              <p className="text-sm text-slate-500">Chưa có lịch</p>
+            ) : upcoming.map((item, i) => (
               <div key={i} className="flex items-center gap-3">
                 <div style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: item.type === "lab" ? "#ede9fe" : "#dbeafe", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <Clock size={15} color={item.type === "lab" ? "#8b5cf6" : "#2563eb"} />
@@ -192,7 +244,7 @@ export function StudentDashboard() {
           <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid #f1f5f9" }}>
             <div>
               <p style={{ fontWeight: 700, fontSize: "0.95rem", color: "#1e293b" }}>Môn đang học</p>
-              <p style={{ fontSize: "0.72rem", color: "#64748b" }}>{totalTC}/24 tín chỉ đã đăng ký</p>
+              <p style={{ fontSize: "0.72rem", color: "#64748b" }}>{enrolledTC}/24 tín chỉ đã đăng ký</p>
             </div>
             <button
               onClick={() => navigate("/student/registrations")}
@@ -212,7 +264,9 @@ export function StudentDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {ENROLLED_COURSES.map((c) => (
+                {uniqueCourses.length === 0 ? (
+                  <tr><td colSpan="4" className="text-center py-4 text-sm text-slate-500">Chưa đăng ký môn nào</td></tr>
+                ) : uniqueCourses.map((c) => (
                   <tr key={c.code} style={{ borderTop: "1px solid #f1f5f9" }}>
                     <td className="px-4 py-2.5" style={{ fontFamily: "monospace", fontSize: "0.75rem", color: "#2563eb", fontWeight: 600 }}>{c.code}</td>
                     <td className="px-4 py-2.5" style={{ fontSize: "0.8rem", color: "#1e293b" }}>{c.name}</td>
@@ -241,21 +295,23 @@ export function StudentDashboard() {
               </button>
             </div>
             <div className="divide-y" style={{ borderColor: "#f1f5f9" }}>
-              {RECENT_GRADES.map((g) => (
-                <div key={g.mon} className="flex items-center justify-between px-5 py-3">
+              {recentGrades.length === 0 ? (
+                <div className="px-5 py-4 text-sm text-slate-500">Chưa có điểm nào được công bố</div>
+              ) : recentGrades.map((g) => (
+                <div key={g.id || g.courseCode} className="flex items-center justify-between px-5 py-3">
                   <div>
-                    <p style={{ fontSize: "0.82rem", color: "#1e293b", fontWeight: 500 }}>{g.mon}</p>
-                    <p style={{ fontSize: "0.7rem", color: "#64748b" }}>{g.tc} tín chỉ</p>
+                    <p style={{ fontSize: "0.82rem", color: "#1e293b", fontWeight: 500 }}>{g.courseName || g.courseCode}</p>
+                    <p style={{ fontSize: "0.7rem", color: "#64748b" }}>{g.courseCode}</p>
                   </div>
                   <div className="flex gap-3 text-right">
                     <div>
                       <p style={{ fontSize: "0.62rem", color: "#94a3b8" }}>Giữa kỳ</p>
-                      <p style={{ fontSize: "0.9rem", fontWeight: 700, color: "#2563eb" }}>{g.giuaky}</p>
+                      <p style={{ fontSize: "0.9rem", fontWeight: 700, color: "#2563eb" }}>{g.midtermScore ?? "—"}</p>
                     </div>
                     <div>
-                      <p style={{ fontSize: "0.62rem", color: "#94a3b8" }}>Cuối kỳ</p>
-                      <p style={{ fontSize: "0.9rem", fontWeight: 700, color: g.cuoiky ? "#10b981" : "#94a3b8" }}>
-                        {g.cuoiky ?? "—"}
+                      <p style={{ fontSize: "0.62rem", color: "#94a3b8" }}>Tổng kết</p>
+                      <p style={{ fontSize: "0.9rem", fontWeight: 700, color: g.totalScore != null ? "#10b981" : "#94a3b8" }}>
+                        {g.totalScore ?? "—"}
                       </p>
                     </div>
                   </div>

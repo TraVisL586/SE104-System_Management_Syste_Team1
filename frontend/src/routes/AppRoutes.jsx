@@ -21,8 +21,12 @@ import AcademicAdminWorkspacePage from '../pages/admin/AcademicAdminWorkspacePag
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import CourseSections from '../pages/admin/CourseSections';
 import CurriculumMgmt from '../pages/admin/CurriculumMgmt';
+import DepartmentManagement from '../pages/admin/DepartmentManagement';
+import ProgramManagement from '../pages/admin/ProgramManagement';
+import CourseManagement from '../pages/admin/CourseManagement';
 import TimetableManager from '../pages/admin/TimetableManager';
-import StudentStatus from '../pages/admin/StudentStatus';
+import StudentManagement from '../pages/admin/StudentManagement';
+import AccountManagement from '../pages/admin/AccountManagement';
 import { SystemLogs } from '../pages/admin/SystemLogs';
 
 // ── Advisor ──────────────────────────────────────────────────────────────────
@@ -47,7 +51,9 @@ import Registrations from '../pages/student/Registrations';
 import StudentTimetable from '../pages/student/StudentTimetable';
 import Grades from '../pages/student/Grades';
 import TuitionFees from '../pages/student/TuitionFees';
+import PaymentHistory from '../pages/student/PaymentHistory';
 import AcademicRequests from '../pages/student/AcademicRequests';
+import Notifications from '../pages/student/Notifications';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -148,10 +154,26 @@ const appRouter = createBrowserRouter([
         ),
       },
       {
+        path: '/student/payments',
+        element: (
+          <ProtectedRoute allowedRoles={['STUDENT']}>
+            <PaymentHistory />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: '/student/requests',
         element: (
           <ProtectedRoute allowedRoles={['STUDENT']}>
             <AcademicRequests />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/student/notifications',
+        element: (
+          <ProtectedRoute allowedRoles={['STUDENT']}>
+            <Notifications />
           </ProtectedRoute>
         ),
       },
@@ -256,10 +278,34 @@ const appRouter = createBrowserRouter([
         ),
       },
       {
+        path: '/admin/departments',
+        element: (
+          <ProtectedRoute allowedRoles={ADMIN_ROLES}>
+            <DepartmentManagement />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/admin/programs',
+        element: (
+          <ProtectedRoute allowedRoles={ADMIN_ROLES}>
+            <ProgramManagement />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/admin/catalog-courses',
+        element: (
+          <ProtectedRoute allowedRoles={ADMIN_ROLES}>
+            <CourseManagement />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: '/admin/student-status',
         element: (
           <ProtectedRoute allowedRoles={ADMIN_ROLES}>
-            <StudentStatus />
+            <StudentManagement />
           </ProtectedRoute>
         ),
       },
@@ -268,6 +314,14 @@ const appRouter = createBrowserRouter([
         element: (
           <ProtectedRoute allowedRoles={ADMIN_ROLES}>
             <SystemLogs />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/admin/accounts',
+        element: (
+          <ProtectedRoute allowedRoles={ADMIN_ROLES}>
+            <AccountManagement />
           </ProtectedRoute>
         ),
       },

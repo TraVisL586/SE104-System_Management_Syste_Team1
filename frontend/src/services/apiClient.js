@@ -55,6 +55,52 @@ export async function get(path, opts = {}) {
   return data;
 }
 
+export async function put(path, body, opts = {}) {
+  const res = await fetch(buildUrl(path), {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+      ...(opts.headers || {}),
+    },
+    body: JSON.stringify(body),
+    ...opts.fetchOptions,
+  });
+
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    const err = new Error((data && data.message) || 'Request failed');
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
+
+  return data;
+}
+
+export async function patch(path, body, opts = {}) {
+  const res = await fetch(buildUrl(path), {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+      ...(opts.headers || {}),
+    },
+    body: JSON.stringify(body),
+    ...opts.fetchOptions,
+  });
+
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    const err = new Error((data && data.message) || 'Request failed');
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
+
+  return data;
+}
+
 export async function del(path, opts = {}) {
   const res = await fetch(buildUrl(path), {
     method: 'DELETE',
@@ -76,4 +122,4 @@ export async function del(path, opts = {}) {
   return data;
 }
 
-export default { post, get, del };
+export default { post, get, put, patch, del };
