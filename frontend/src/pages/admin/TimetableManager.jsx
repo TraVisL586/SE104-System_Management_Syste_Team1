@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { CalendarRange, Plus, Edit2, Trash2, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "../../context/ToastContext";
-import timetableService from "../../services/timetableService";
+import adminSchedulingService from "../../services/adminSchedulingService";
 
 const DAYS  = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
 const SLOTS = [
@@ -58,8 +58,38 @@ export function TimetableManager() {
   const loadTimetable = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await timetableService.getLecturerTimetable();
-      setSchedule(Array.isArray(data) ? data : []);
+      const sections = await adminSchedulingService.getCourseSections();
+      if (!Array.isArray(sections)) return setSchedule([]);
+      
+      const formattedSchedules = [];
+      sections.forEach(sec => {
+        if (sec.schedules && Array.isArray(sec.schedules)) {
+          sec.schedules.forEach(sch => {
+            let day = (sch.dayOfWeek || 1) - 1; 
+            
+            let slot = 1;
+            const startTimeStr = String(sch.startTime || "07:30");
+            if (startTimeStr.startsWith("07")) slot = 1;
+            else if (startTimeStr.startsWith("10")) slot = 2;
+            else if (startTimeStr.startsWith("13")) slot = 3;
+            else if (startTimeStr.startsWith("15")) slot = 4;
+            
+            formattedSchedules.push({
+              id: sch.id,
+              sectionId: sec.id,
+              day,
+              slot,
+              code: sec.code,
+              name: sec.courseName,
+              room: sch.roomCode || sch.roomName || "N/A",
+              gv: sec.lecturerName || "N/A",
+              color: COLORS[formattedSchedules.length % 4],
+              border: BORDERS[formattedSchedules.length % 4]
+            });
+          });
+        }
+      });
+      setSchedule(formattedSchedules);
     } catch (err) {
       setSchedule([]);
       const message = err?.data?.message || err?.message || "Không thể tải thời khóa biểu.";
@@ -88,41 +118,38 @@ export function TimetableManager() {
     try {
       setSubmitting(true);
       
-      // Validate sectionId is provided
       if (!sectionId) {
         showToast("warning", "Chưa nhập Section ID", "Vui lòng nhập Section ID trước khi thêm lịch học.");
         setSubmitting(false);
         return;
       }
+      if (!form.room) {
+        showToast("warning", "Chưa nhập Room ID", "Vui lòng nhập Room ID (số) vào ô phòng học.");
+        setSubmitting(false);
+        return;
+      }
+
+      const slotTimes = {
+        1: { start: "07:30:00", end: "09:45:00" },
+        2: { start: "10:00:00", end: "12:15:00" },
+        3: { start: "13:00:00", end: "15:15:00" },
+        4: { start: "15:30:00", end: "17:45:00" },
+      };
 
       const scheduleData = {
-        day: parseInt(form.day),
-        slot: parseInt(form.slot),
-        code: form.code,
-        name: form.name,
-        room: form.room,
-        lecturer: form.gv,
+        roomId: parseInt(form.room),
+        dayOfWeek: parseInt(form.day) + 1,
+        startTime: slotTimes[form.slot].start,
+        endTime: slotTimes[form.slot].end,
       };
 
-      // Call backend API to add schedule
-      const response = await timetableService.addCourseSectionSchedule(sectionId, scheduleData);
+      await adminSchedulingService.addCourseSectionSchedule(sectionId, scheduleData);
       
-      // Add to local state with response data
-      const idx = schedule.length % 4;
-      const newEntry = {
-        id: response?.id || `T${Date.now()}`,
-        day: parseInt(form.day),
-        slot: parseInt(form.slot),
-        ...form,
-        color: COLORS[idx],
-        border: BORDERS[idx],
-      };
-      
-      setSchedule((prev) => [...prev, newEntry]);
-      showToast("success", "Đã thêm vào TKB!", `${form.code} · ${DAYS[form.day]}`);
+      showToast("success", "Đã thêm vào TKB!", `Section ${sectionId} · ${DAYS[form.day]}`);
       setForm({ day: 0, slot: 1, code: "", name: "", room: "", gv: "" });
       setShowForm(false);
       setSectionId(null);
+      loadTimetable();
     } catch (err) {
       const message = err?.data?.message || err?.message || "Không thể thêm vào thời khóa biểu.";
       showToast("error", "Lỗi thêm dữ liệu", message);
@@ -139,20 +166,14 @@ export function TimetableManager() {
   const removeScheduleFromApi = async (id, entry) => {
     try {
       setSubmitting(true);
-      
-      // Call backend API to remove schedule
-      // Note: entry.id should be the scheduleId from backend
-      // You may need to fetch the sectionId that contains this schedule
-      // For now, we'll try with current sectionId or use entry's sectionId if available
       const targetSectionId = entry?.sectionId || sectionId;
       
       if (targetSectionId) {
-        await timetableService.removeCourseSectionSchedule(targetSectionId, id);
+        await adminSchedulingService.removeCourseSectionSchedule(targetSectionId, id);
       }
       
-      // Remove from local state
-      setSchedule((prev) => prev.filter((s) => s.id !== id));
-      showToast("info", "Đã xóa khỏi TKB", entry?.code);
+      showToast("info", "Đã xóa khỏi TKB", entry?.code || "Thành công");
+      loadTimetable();
     } catch (err) {
       const message = err?.data?.message || err?.message || "Không thể xóa khỏi thời khóa biểu.";
       showToast("error", "Lỗi xóa dữ liệu", message);
@@ -233,10 +254,7 @@ export function TimetableManager() {
               />
             </div>
             {[
-              { key: "code", label: "Mã lớp HP",   placeholder: "VD: CSC501-L01" },
-              { key: "name", label: "Tên môn học",  placeholder: "VD: Học máy" },
-              { key: "room", label: "Phòng học",    placeholder: "VD: B401" },
-              { key: "gv",   label: "Giảng viên",   placeholder: "VD: TS. Nguyễn A" },
+              { key: "room", label: "Room ID (Phòng học)", placeholder: "VD: 1 (Lấy từ DB)" },
             ].map(({ key, label, placeholder }) => (
               <div key={key}>
                 <label style={{ fontSize: "0.78rem", fontWeight: 600, color: "#334155", display: "block", marginBottom: 5 }}>{label}</label>
